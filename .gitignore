@@ -1,0 +1,7 @@
+*.o
+*.dep
+*.a
+*.swp
+.cproject
+.project
+serverInstancePIDFile

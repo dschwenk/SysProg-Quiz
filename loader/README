@@ -1,0 +1,27 @@
+Hinweise zum Loader
+===================
+
+
+1) Starten des Loaders
+======================
+
+bin/loader [-d] VERZEICHNIS
+
+-d:		Wenn angegeben, dann schreibt der Loader zusätzliche
+		Debug-Ausgaben auf die Standardfehlerausgabe
+
+VERZEICHNIS:	Das Verzeichnis, das der Loader nach Fragekatalogen
+		durchsuchen soll
+
+
+2) Shared Memory
+================
+
+Der Loader benutzt POSIX Shared Memory. Somit müssen Sie auch diese API
+im Server verwenden.  Erklärungen zur Verwendung der Funktionen shm_open,
+shm_close, mmap, munmap, ftruncate, shm_unlink finden Sie in Moodle unter:
+	https://www.elearning.hs-weingarten.de/mod/lesson/view.php?id=5360
+
+In der Datei common/server_loader_protocol.h gibt es ein Makro SHMEM_NAME, das
+den Namen des Shared Memorys definiert. Bitte passen Sie den Namen für Ihre
+Projektgruppe an!
