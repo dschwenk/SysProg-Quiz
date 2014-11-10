@@ -18,17 +18,23 @@
 #include <sys/socket.h>
 
 
+// Array fuer die Spielerverwaltung
 PLAYER spieler[4];
 
-/*
- * Initialisiert das Array der User
- */
+// Mutex fuer die Spielerverwaltung
+pthread_mutex_t user_mutex;
 
+
+
+
+// Initialisiere Spielerarray
 void initSpielerverwaltung(){
-	// initialisiere Spieler mit ID -1 und Name '0'
+	// initialisiere Spieler mit Standardwerten
 	for(int i = 0; i < 4; i++){
 		spieler[i].id = -1;
-		spieler[i].name[0] = '0';
+		spieler[i].name[0] = '\0';
+		spieler[i].score = 0;
+		spieler[i].GameOver = 0;
 	}
 }
 
@@ -68,23 +74,59 @@ int addPlayer(char *name, int length, int sock){
 					spieler[c].id = i;
 					strncpy(spieler[c].name, name, length + 1);
 					spieler[c].sockDesc = sock;
+					// gebe Spieler-ID zurueck
 					return i;
 				}
 			}
 		}
 	}
+	// kein freier Platz - max. Anzahl an Spielern erreicht
 	return 4;
 }
 
 
+
 /*
- * sende PlayerList an alle Spieler
+ * Entfernt Spieler aus der UserListe
+ *
+ * int id ID des Spielers der entfernt wird
+ *
  */
 
+int removePlayer(int id) {
+	int i = 0;
+	int current_user_count = countUser();
+	// suche Spieler im Array
+	while(spieler[i].id != id){
+		i++;
+	}
+	// setze Werte auf Standardwerte zurueck
+	debugPrint("Loesche Spieler - setzte Daten auf Standard zurueck!");
+	spieler[i].id = -1;
+	spieler[i].name[0] = '\0';
+	spieler[i].sockDesc = 0;
+	spieler[i].score = 0;
+	// gehe Spielerliste durch und setze geloeschten / default Spieler an letzte Stelle von Array
+	while(i < current_user_count){
+		PLAYER temp = spieler[i];
+		spieler[i] = spieler[i+1];
+		spieler[i+1] = temp;
+		i++;
+	}
+	// aktualisiere Spielstand / Rangfolge
+	setRank();
+	// sende PlayerList an alle Spieler
+	sendPlayerList();
+	return 0;
+}
+
+
+
+// sende PlayerList an alle Spieler
 void sendPlayerList(){
 
-	PACKET player;
-	player.header.type = RFC_PLAYERLIST;
+	PACKET packet;
+	packet.header.type = RFC_PLAYERLIST;
 
 	int user_count = 0;
 
@@ -96,18 +138,76 @@ void sendPlayerList(){
 			playerlist.id = spieler[i].id;
 			strncpy(playerlist.playername, spieler[i].name, 32);
 			playerlist.score = 0;
-			player.content.playerlist[i] = playerlist;
+			packet.content.playerlist[i] = playerlist;
 			user_count++;
 		}
 	}
 
 	// Laenge der Message: Anzahl der Spieler * 37 (Groeße der PLAYERLIST)
-	player.header.length = htons(sizeof(PLAYERLIST) * user_count);
+	packet.header.length = htons(sizeof(PLAYERLIST) * user_count);
 	// An alle Clients senden
 	for (int c = 0; c < user_count; c++) {
 		if (spieler[c].sockDesc != 0) {
 			// Packet senden
-			sendPacket(player, spieler[c].sockDesc);
+			sendPacket(packet, spieler[c].sockDesc);
 		}
 	}
+}
+
+
+
+// zaehlt aktuelle Anzahl an Spielern
+int countUser() {
+	int current_user_count = 0;
+	for(int i = 0; i < 4; i++){
+		// Spieler vorhanden - erhoehe Zaehler
+		if (spieler[i].id != -1) {
+			current_user_count++;
+		}
+	}
+	// gebe Anzahl an Spielern zurueck
+	return current_user_count;
+}
+
+
+
+// sortiere Spieler nach Punkten
+void setRank(){
+	int current_user_count = countUser();
+	// gehe Spieler durch
+	for(int i = current_user_count; i >= 0; i--){
+		for(int n = 0; n < (current_user_count - 1); n++){
+			// vergleiche Spielstaende - ist Spielstand des nachfolgender groesser - tausche Plaetze
+			if(spieler[n].score < spieler[n+1].score){
+				PLAYER temp = spieler[n];
+				spieler[n] = spieler[n+1];
+				spieler[n+1] = temp;
+			}
+		}
+	}
+}
+
+
+// Mutex fuer die Benutzerdaten initalisieren
+int create_user_mutex() {
+	if(pthread_mutex_init(&user_mutex, NULL) != 0){
+		errorPrint("Fehler beim initialisieren des Benutzermutex.");
+		return -1;
+	}
+	return 0;
+}
+
+
+
+// Zugriff auf Benutzerdaten sperren
+void user_mutex_lock() {
+	debugPrint("lock Benutzerdatenmutex.");
+	pthread_mutex_lock(&user_mutex);
+}
+
+
+// Zugriff auf Benutzerdaten erlauben
+void user_mutex_unlock() {
+	debugPrint("unlock Benutzerdatenmutex.");
+	pthread_mutex_unlock(&user_mutex);
 }

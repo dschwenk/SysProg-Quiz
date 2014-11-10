@@ -12,6 +12,8 @@
 
 #include "common/question.h"
 
+// maximale Anzahl an Spielern
+#define MAX_PLAYERS	4;
 
 // Uebersicht über die Nachrichtentypen
 #define RFC_LOGINREQUEST         1 // Anmeldung eines Clients am Server

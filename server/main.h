@@ -15,5 +15,7 @@ void show_help();
 void process_commands(int, char**);
 void setSingleInstance(int);
 void closeSingleInstance(int);
+void endServer();
+void INThandler(int);
 
 #endif /* MAIN_H_ */

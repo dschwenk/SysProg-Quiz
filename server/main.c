@@ -11,6 +11,7 @@
 #include "common/rfc.h"
 #include "login.h"
 #include "user.h"
+#include "score.h"
 #include "catalog.h"
 #include "common/sockets.h"
 #include "common/networking.h"
@@ -24,11 +25,17 @@
 #include <pthread.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <signal.h>
 
 
 
 // Serverport
 int server_port;
+// Serversocket
+int server_socket;
+// Server singleton file
+int SingleInstanceFile = 0;
+
 
 void set_port(char* port_str){
 	server_port = atoi(port_str);
@@ -155,6 +162,52 @@ void closeSingleInstance(int file){
 }
 
 
+// hinterlasse nach beenden ein sauberes System
+void endServer(){
+
+	debugPrint("Beende Server.");
+
+	// SingleInstance-Datei schliessen und loeschen
+	closeSingleInstance(SingleInstanceFile);
+	remove("serverInstancePIDFile");
+	debugPrint("SingleInstanceFile geschlossen und geloescht.");
+
+	// Socket schliessen
+	close(server_socket);
+	debugPrint("Serversocket geschlossen.");
+
+	// TODO
+	// loader beenden, shared memorey
+
+	infoPrint("bye ...");
+}
+
+
+/*
+ * Singnal handler
+ * http://www.csl.mtu.edu/cs4411.ck/www/NOTES/signal/install.html
+ */
+void INThandler(int sig) {
+	char c = '0';
+	if(sig != SIGINT){
+		debugPrint("Signal is not SIGINT.");
+		return;
+	}
+	else {
+		infoPrint("Wollen Sie den Server wirklich beenden? [j/n]: ");
+		c = getchar();
+		if((c == 'j') || (c == 'J')){
+			debugPrint("Server soll beendet werden.");
+			endServer();
+			exit(0);
+		}
+		else {
+			debugPrint("Server soll nicht beendet werden.");
+			return;
+		}
+	}
+}
+
 
 /**  Start des Servers
  *   param argc Anzahl der Startparameter
@@ -164,13 +217,15 @@ void closeSingleInstance(int file){
 int main(int argc, char ** argv) {
 
 	// Der Server soll auf dem lokalen System nur einmal gestartet werden koennen.
-	int SingleInstanceFile = 0;
 	setSingleInstance(SingleInstanceFile);
 
 	setProgName(argv[0]);
 
 	// verarbeite Parameter
 	process_commands(argc, argv);
+
+	// reagiere auf Signal, u.a. STRG + C
+	signal(SIGINT, INThandler);
 
 	// gebe Gruppennamen aus
 	infoPrint("Server Gruppe Jost, Frick & Schwenk\n");
@@ -179,21 +234,41 @@ int main(int argc, char ** argv) {
 	initSpielerverwaltung();
 
 	// Socket erstellen
-	int socket = openServerSocket(server_port);
-	if(socket == -1){
+	server_socket = openServerSocket(server_port);
+	if(server_socket == -1){
 		errorPrint("Server Socket konnte nicht erstellt werden!");
+		endServer();
+		exit(0);
+	}
+
+	// TODO
+	// Loader starten
+
+
+	// http://pubs.opengroup.org/onlinepubs/7908799/xsh/sem_init.html
+	// Semaphor fuer Spielerliste / Punktestand initialisieren
+	sem_init(&semaphor_score, 0, 0);
+
+	// Score thread starten
+	pthread_t score_thread;
+	if(pthread_create(&score_thread, NULL, (void*)&score_main, NULL) == -1){
+		errorPrint("Score_thread konnte nicht erstellt werden!");
+		endServer();
 		exit(0);
 	}
 
 	// starte Login-Thread
 	pthread_t login_thread;
-	if(pthread_create(&login_thread, NULL, login_main(socket), NULL) == -1){
+	if(pthread_create(&login_thread, NULL, (void*)login_main(server_socket), NULL) == -1){
 		errorPrint("Login_thread konnte nicht erstellt werden!");
+		endServer();
 		exit(0);
 	}
 
-	// SingleInstance-Datei schliessen
-	closeSingleInstance(SingleInstanceFile);
+
+
+	// beende Server
+	endServer();
 
 	return 0;
 }
