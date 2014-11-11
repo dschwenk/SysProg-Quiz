@@ -40,7 +40,7 @@ char *server = "localhost";
 char *port = "8111";
 
 
-int verbindungAufbauen(int socketD_, char* port_, char* hostname_) {
+int establishConnection(int socketD_, char* port_, char* hostname_) {
 	int portno;
 	struct sockaddr_in serv_addr;
 	struct hostent * server;
@@ -49,7 +49,7 @@ int verbindungAufbauen(int socketD_, char* port_, char* hostname_) {
 	portno = atoi(port_);
 	server = gethostbyname(hostname_);
 	if(server == NULL ){
-		perror("Error, no such host");
+		infoPrint("Error, no such host");
 		failure = 1;
 	}
 	else {
@@ -89,6 +89,7 @@ void show_Clienthelp() {
 }
 
 
+// werte Kommandozeilenparameter aus
 void process_client_commands(int argc, char** argv) {
 
     debugPrint("Parsing command line options...");
@@ -174,18 +175,18 @@ int main(int argc, char **argv){
 	//Socket anlegen
 	socketDeskriptor = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
-	// baue Verbindung auf
-	if(verbindungAufbauen(socketDeskriptor, port, server) == 0){
+	// stelle Verbindung zum Server her
+	if(establishConnection(socketDeskriptor, port, server) == 0){
 
-    	infoPrint("Verbindung aufgebaut\n");
+		infoPrint("Verbindung hergestellt\n");
 
 		// GUI initialisieren
-    	infoPrint("Initialisiere GUI\n");
-    	guiInit(&argc, &argv);
+		infoPrint("Initialisiere GUI\n");
+		guiInit(&argc, &argv);
 
 		// Erstellen des LoginRequest
-    	infoPrint("sende LoginReqest\n");
-    	loginRequest(name);
+		infoPrint("sende LoginReqest\n");
+		loginRequest(name);
 
 		// warte auf Antwort des Servers
 		PACKET response = recvPacket(socketDeskriptor);
@@ -193,7 +194,6 @@ int main(int argc, char **argv){
 		// RFC_LOGINRESPONSEOK
 		if(response.header.type == 2){
 	    	infoPrint("Login Response ok\n");
-			//printf("ClientID: %i\n",response.content.clientid);
 			clientID = response.content.clientid;
 		}
 		// RFC_ERRORWARNING
@@ -203,14 +203,15 @@ int main(int argc, char **argv){
 			// Nullterminierung
 			message[ntohs(response.header.length) - 1] = '\0';
 			// zeige in GUI Fehlermeldung an
+	    	infoPrint("Fehler: %s\n", message);
 			guiShowErrorDialog(message, response.content.error.errortype);
 			exit(0);
 		}
 		// Verbindung verloren
 		else {
 			// zeige in GUI Fehlermeldung an
-			guiShowErrorDialog("Verbindung zum Server verloren!",
-			response.content.error.errortype);
+	    	infoPrint("Verbindung zum Server verloren!");
+			guiShowErrorDialog("Verbindung zum Server verloren!", response.content.error.errortype);
 			exit(0);
 		}
 

@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <pthread.h>
 
 
 // Array fuer die Spielerverwaltung
