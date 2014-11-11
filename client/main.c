@@ -153,12 +153,6 @@ void process_client_commands(int argc, char** argv) {
     	show_Clienthelp();
 		exit(0);
 	}
-
-	// Name zu lang
-	if(strlen(name) > 31){
-    	infoPrint("Der Name ist zu lang\n");
-		exit(0);
-	}
 }
 
 
