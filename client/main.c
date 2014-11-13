@@ -12,6 +12,7 @@
 #include "common/sockets.h"
 #include "common/networking.h"
 #include "common/rfc.h"
+#include "listener.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -26,7 +27,8 @@
 #include <netinet/tcp.h>
 #include <getopt.h>
 #include <stdbool.h>
-#include "listener.h"
+#include <pthread.h>
+
 
 
 int socketDeskriptor;
@@ -109,26 +111,26 @@ void process_client_commands(int argc, char** argv) {
     int opt_index = 0;
     int loop = 1;
     while(loop != 0){
-    	int opt = getopt_long(argc, argv, short_options, long_options, &opt_index);
+    	char opt = getopt_long(argc, argv, short_options, long_options, &opt_index);
     	switch(opt){
 			// zeige Hilfe
-    		case 'h':
-    			show_Clienthelp();
+			case 'h':
+				show_Clienthelp();
 				exit(1);
 				break;
 			// Name
 			case 'n':
 				name = optarg;
 				if(strlen(name) >= 32) {
-				    infoPrint("Name darf nur max. 32 Zeichen lang sein");
-				    exit(1);
+					infoPrint("Name darf nur max. 32 Zeichen lang sein");
+					exit(1);
 				}
 				userNameIsSet = true;
 				break;
 			// Verbose
 			case 'v':
 				debugEnable();
-		    	infoPrint("debug Ausgabe aktiviert.\n");
+				infoPrint("debug Ausgabe aktiviert.\n");
 				break;
 			// Port
 			case 'p':
@@ -144,8 +146,8 @@ void process_client_commands(int argc, char** argv) {
 			// Option nicht bekannt
 			default:
 				break;
-			}
-    	}
+		}
+	}
 
 	// Es wurde kein Name angegeben
 	if(!userNameIsSet){
@@ -186,12 +188,12 @@ int main(int argc, char **argv){
 		PACKET response = recvPacket(socketDeskriptor);
 
 		// RFC_LOGINRESPONSEOK
-		if(response.header.type == 2){
+		if(response.header.type == RFC_LOGINRESPONSEOK){
 	    	infoPrint("Login Response ok\n");
 			clientID = response.content.clientid;
 		}
 		// RFC_ERRORWARNING
-		else if(response.header.type == 255){
+		else if(response.header.type == RFC_ERRORWARNING){
 			char message[(ntohs(response.header.length))];
 			strncpy(message, response.content.error.errormessage,ntohs(response.header.length) - 1);
 			// Nullterminierung
