@@ -26,5 +26,9 @@ int sendCatalog(int);
 int setActiveCatalog(PACKET);
 PACKET getActiveCatalog();
 bool isCatalogChosen();
+/*
+Question* getQuestion(int);
+void setShMem(char*);
+ */
 
 #endif
