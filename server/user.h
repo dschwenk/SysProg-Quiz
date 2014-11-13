@@ -24,6 +24,7 @@ typedef struct player {
 
 void initSpielerverwaltung();
 int addPlayer(char*,int,int);
+void sendToAll(PACKET);
 void sendPlayerList();
 int create_user_mutex();
 void lock_user_mutex();

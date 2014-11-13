@@ -14,9 +14,6 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-#include "common/rfc.h"
-#include "user.h"
-
 
 sem_t semaphor_score;
 void* score_main();

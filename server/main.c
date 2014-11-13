@@ -167,10 +167,16 @@ void endServer(){
 
 	debugPrint("Beende Server.");
 
-	// SingleInstance-Datei schliessen und loeschen
-	closeSingleInstance(SingleInstanceFile);
-	remove("serverInstancePIDFile");
-	debugPrint("SingleInstanceFile geschlossen und geloescht.");
+	// Nachricht an alle Clients senden
+	infoPrint("Sende Nachricht an Client: Server wird beendet.");
+	PACKET close_server_packet;
+	close_server_packet.header.type = RFC_ERRORWARNING;
+	close_server_packet.header.length = htons(sizeof(ERROR));
+	close_server_packet.content.error.errortype = ERR_SERVER_CLOSE;
+	strncpy(close_server_packet.content.error.errormessage, "Server beendet", 100);
+	// sende Nachricht
+	sendToAll(close_server_packet);
+	debugPrint("Nachricht ueber Serverende an alle Clients verschickt.");
 
 	// Socket schliessen
 	close(server_socket);
@@ -178,6 +184,11 @@ void endServer(){
 
 	// TODO
 	// loader beenden, shared memorey
+
+	// SingleInstance-Datei schliessen und loeschen
+	closeSingleInstance(SingleInstanceFile);
+	remove("serverInstancePIDFile");
+	debugPrint("SingleInstanceFile geschlossen und geloescht.");
 
 	infoPrint("bye ...");
 }

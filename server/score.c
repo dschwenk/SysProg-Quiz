@@ -7,7 +7,10 @@
  * score.h: Implementierung des Score-Agents
  */
 
+
 #include "score.h"
+#include "common/rfc.h"
+#include "user.h"
 
 
 void* score_main(){

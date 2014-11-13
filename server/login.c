@@ -64,7 +64,7 @@ void* login_main(int sock) {
 					perror("Name bereits vorhanden");
 					response.header.type = RFC_ERRORWARNING;
 					response.header.length = htons(sizeof(ERROR));
-					response.content.error.errortype = 1; // Fatal Error: Client schließt
+					response.content.error.errortype = ERR_SERVER_PLAYERNAMEEXIST;
 					strncpy(response.content.error.errormessage, "Name bereits vorhanden", 100);
 				}
 				// Zu viele Spieler angemeldet
@@ -72,7 +72,7 @@ void* login_main(int sock) {
 					perror("Maximale Anzahl an Spielern erreicht!");
 					response.header.type = RFC_ERRORWARNING;
 					response.header.length = htons(sizeof(ERROR));
-					response.content.error.errortype = 1;
+					response.content.error.errortype = ERR_SERVER_MAXCOUNTPLAYERREACHED;
 					strncpy(response.content.error.errormessage, "Maximale Anzahl an Spielern erreicht!", 100);
 				}
 				// ID ok - RFC_LOGINRESPONSEOK

@@ -49,7 +49,6 @@ void initSpielerverwaltung(){
  *
  * return ID des Users, falscher Name(-1) oder max. Anzahl an Spieler erreicht (4)
  */
-
 int addPlayer(char *name, int length, int sock){
 	name[length] = 0;
 	int current_ids[4] = { 0 };
@@ -93,7 +92,6 @@ int addPlayer(char *name, int length, int sock){
  * int id ID des Spielers der entfernt wird
  *
  */
-
 int removePlayer(int id) {
 	int i = 0;
 	int current_user_count = countUser();
@@ -119,6 +117,25 @@ int removePlayer(int id) {
 	// sende PlayerList an alle Spieler
 	sendPlayerList();
 	return 0;
+}
+
+
+
+/*
+ * Sende Nachricht an alle Clients
+ *
+ * PACKET packet Paket das an alle Clients versendet wird
+ *
+ */
+void sendToAll(PACKET packet) {
+	int current_count_players = countUser();
+	// gehe alle Spieler durch und Sende Nachricht
+	for(int i = 0; i < current_count_players; i++){
+		if((spieler[i].id != -1) && (spieler[i].sockDesc != 0)){
+			sendPacket(packet, spieler[i].sockDesc);
+		}
+	}
+	return;
 }
 
 

@@ -31,6 +31,12 @@
 #define RFC_ERRORWARNING         255 // Fehlermeldung an den Client
 
 
+// selbst definierte Warnung-/Fehlertypen
+#define ERR_SERVER_CLOSE 100
+#define ERR_SERVER_MAXCOUNTPLAYERREACHED 101
+#define ERR_SERVER_PLAYERNAMEEXIST 102
+
+
 //Packen der Struckts auf minimale Größe
 #pragma pack(push,1)
 
