@@ -11,6 +11,7 @@
 #define USER_H
 
 #include <stdint.h>
+#include "common/rfc.h"
 
 // Struct fuer Spielerverwaltung - Name, ID, Socket, Score
 typedef struct player {
@@ -30,6 +31,7 @@ int create_user_mutex();
 void lock_user_mutex();
 void unlock_user_mutex();
 int countUser();
+void sendCatalogChange();
 void setRank();
 
 #endif

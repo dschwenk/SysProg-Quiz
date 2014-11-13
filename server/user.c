@@ -12,6 +12,8 @@
 #include "common/util.h"
 #include "common/networking.h"
 #include "login.h"
+#include "catalog.h"
+
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -185,6 +187,22 @@ int countUser() {
 	}
 	// gebe Anzahl an Spielern zurueck
 	return current_user_count;
+}
+
+
+
+// sende aktuellen Katalog an alle Spieler
+void sendCatalogChange(){
+	PACKET packet;
+	// hole aktuellen Katalog
+	packet = getActiveCatalog();
+	// gehe Spieler durch und sende Nachricht
+	for (int i = 1; i < 4; i++) {
+		if(spieler[i].id != -1 && spieler[i].sockDesc != 0){
+			sendPacket(packet, spieler[i].sockDesc);
+		}
+	}
+	return;
 }
 
 

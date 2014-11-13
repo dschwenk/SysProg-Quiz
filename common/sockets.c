@@ -10,42 +10,49 @@
 
 #include "sockets.h"
 
+#include <string.h>
+#include <unistd.h>
+
+
+
 /**
  * öffnet Socket für den Server
  *
  * param port - Port des Sockets (normal 8111)
  *
  */
-
 int openServerSocket(unsigned short port) {
 
+	// Erstellt Socket auf IPv4
+	int login_socket = socket(AF_INET, SOCK_STREAM, 0);
 
-        //Erstellt Socket auf IPv4
-        int login_socket = socket(AF_INET, SOCK_STREAM, 0);
+	// Fehler beim Socketerstellen abfangen
+	if (login_socket == -1) {
+		errorPrint("Socket konnte nicht erstellt werden: ");
+		return -1;
+	}
 
-        //Fehler beim Socketerstellen abfangen
-        if (login_socket == -1) {
-                perror("Socket konnte nicht erstellt werden: ");
-                return -1;
-        }
+	// Struct fuer Socketadresse
+	struct sockaddr_in address;
 
-        // Struct fuer Socketadresse
-        struct sockaddr_in address;
+	// Addresseigenschaften
+	// Erstellt Speicherplatz für Adresse und fuellt mit Nullen
+	memset(&address, 0, sizeof(address));
+	// IPv4 Adresse
+	address.sin_family = AF_INET;
+	// // konvertiere Werte von host byte order zu network byte order
+	address.sin_port = htons(port);
+	// Empfaengt von allen Interfaces
+	address.sin_addr.s_addr = INADDR_ANY;
 
-        // Addresseigenschaften
-        memset(&address, 0, sizeof(address)); // Erstellt Speicherplatz für Adresse und fuellt mit Nullen
-        address.sin_family = AF_INET; // IPv4 Adresse
-        address.sin_port = htons(port); // hton sorgt fuer Network-Byte-Order des Ports
-        address.sin_addr.s_addr = INADDR_ANY; // Empfaengt von allen Interfaces
-
-        // Socket an den Port binden
-        if (bind(login_socket, (struct sockaddr *) &address, sizeof(address)) == -1) {
-                perror("bind error:");
-                close(login_socket);
-                return -1;
-        }
-        // Gibt Serverport wieder
-        infoPrint("Serverport: %d\n", port);
-        return login_socket;
+	// Socket an den Port binden
+	if (bind(login_socket, (struct sockaddr *) &address, sizeof(address)) == -1) {
+		errorPrint("bind error:");
+		close(login_socket);
+		return -1;
+	}
+	// testweise Serverport ausgeben
+	infoPrint("Serverport: %d\n", port);
+	return login_socket;
 }
 
