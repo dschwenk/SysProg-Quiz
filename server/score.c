@@ -19,11 +19,11 @@ void* score_main(){
 		// Spielstand Semaphore sperren
 		sem_wait(&semaphor_score);
 		// User Mutex sperren
-		user_mutex_lock();
+		lock_user_mutex();
 		// sende Spielerliste an alle Spieler
 		sendPlayerList();
 		// Mutex freigeben
-		user_mutex_unlock();
+		unlock_user_mutex();
 	}
 	return NULL;
 }

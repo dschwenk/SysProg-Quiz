@@ -13,7 +13,8 @@
 #include "common/question.h"
 
 // maximale Anzahl an Spielern
-#define MAX_PLAYERS	4;
+#define MAX_PLAYERS	4
+
 
 // Uebersicht über die Nachrichtentypen
 #define RFC_LOGINREQUEST         1 // Anmeldung eines Clients am Server
@@ -31,10 +32,15 @@
 #define RFC_ERRORWARNING         255 // Fehlermeldung an den Client
 
 
-// selbst definierte Warnung-/Fehlertypen
+// selbst definierte Warnung-/Fehlertypen + Konstanten
 #define ERR_SERVER_CLOSE 100
 #define ERR_SERVER_MAXCOUNTPLAYERREACHED 101
 #define ERR_SERVER_PLAYERNAMEEXIST 102
+
+// max. Laenge Spielername (inkl. '\0')
+#define PLAYER_NAME_LENGTH 32
+// max. Laenge Katalogname (inkl. '\0')
+#define CATALOG_NAME_LENGTH 31
 
 
 //Packen der Struckts auf minimale Größe
@@ -43,7 +49,7 @@
 
 // Spelername + ID + Spielstand
 typedef struct {
- 	char playername[32];
+ 	char playername[PLAYER_NAME_LENGTH];
  	uint32_t score;
  	uint8_t id;
 } PLAYERLIST;
@@ -65,15 +71,15 @@ typedef struct {
 
 // Union, um alle Nachrichten in Content zu verpacken
 typedef union {
-	char playername[32];			// LoginRequest
-	uint8_t clientid;				// LoginResponseok
-	char catalogname[31];			// CatalogResponse, CatalogChange, StartGame
-	PLAYERLIST playerlist[4];		// Playerlist
-	QuestionMessage question;		// Question
-	uint8_t selection;				// QuestionAnswered
-	QUESTIONRESULT antwort;			// QuestionResult
-	uint8_t playerrank;				// GameOver
-	ERROR error;					// Error
+	char playername[PLAYER_NAME_LENGTH];	// LoginRequest
+	uint8_t clientid;						// LoginResponseok
+	char catalogname[CATALOG_NAME_LENGTH];	// CatalogResponse, CatalogChange, StartGame
+	PLAYERLIST playerlist[MAX_PLAYERS];		// Playerlist
+	QuestionMessage question;				// Question
+	uint8_t selection;						// QuestionAnswered
+	QUESTIONRESULT antwort;					// QuestionResult
+	uint8_t playerrank;						// GameOver
+	ERROR error;							// Error
 } CONTENT;
 
 

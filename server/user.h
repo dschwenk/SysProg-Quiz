@@ -16,7 +16,7 @@
 // Struct fuer Spielerverwaltung - Name, ID, Socket, Score
 typedef struct player {
 	int id;
-	char name[32];
+	char name[PLAYER_NAME_LENGTH];
 	int sockDesc;
 	uint32_t score;
 	int GameOver;

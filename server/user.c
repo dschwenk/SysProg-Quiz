@@ -22,7 +22,7 @@
 
 
 // Array fuer die Spielerverwaltung
-PLAYER spieler[4];
+PLAYER spieler[MAX_PLAYERS];
 
 // Mutex fuer die Spielerverwaltung
 pthread_mutex_t user_mutex;
@@ -33,9 +33,10 @@ pthread_mutex_t user_mutex;
 // Initialisiere Spielerarray
 void initSpielerverwaltung(){
 	// initialisiere Spieler mit Standardwerten
-	for(int i = 0; i < 4; i++){
+	for(int i = 0; i < MAX_PLAYERS; i++){
 		spieler[i].id = -1;
 		spieler[i].name[0] = '\0';
+		spieler[i].sockDesc = 0;
 		spieler[i].score = 0;
 		spieler[i].GameOver = 0;
 	}
@@ -54,7 +55,7 @@ void initSpielerverwaltung(){
 int addPlayer(char *name, int length, int sock){
 	name[length] = 0;
 	int current_ids[4] = { 0 };
-	for(int i = 0; i < 4; i++){
+	for(int i = 0; i < MAX_PLAYERS; i++){
 		// Auf gleichen Namen pruefen
 		if(strncmp(spieler[i].name, name, length + 1) == 0){
 			infoPrint("Name bereits vorhanden!");
@@ -67,7 +68,7 @@ int addPlayer(char *name, int length, int sock){
 		}
 	}
 	// Naechsten leeren Platz suchen
-	for(int i = 0; i < 4; i++){
+	for(int i = 0; i < MAX_PLAYERS; i++){
 		// ist noch nicht belegt
 		if(current_ids[i] == 0){
 			for(int c = 0; c < 4; c++){
@@ -133,9 +134,7 @@ void sendToAll(PACKET packet) {
 	int current_count_players = countUser();
 	// gehe alle Spieler durch und Sende Nachricht
 	for(int i = 0; i < current_count_players; i++){
-		if((spieler[i].id != -1) && (spieler[i].sockDesc != 0)){
-			sendPacket(packet, spieler[i].sockDesc);
-		}
+		sendPacket(packet, spieler[i].sockDesc);
 	}
 	return;
 }
@@ -148,40 +147,31 @@ void sendPlayerList(){
 	PACKET packet;
 	packet.header.type = RFC_PLAYERLIST;
 
-	int user_count = 0;
+	int user_count = countUser();
 
-	// Spielerliste in PLAYERLIST playerlist schreiben
-	for (int i = 0; i < 4; i++) {
+	for(int i = 0; i < user_count; i++){
 		// fuege Spieler zur Liste hinzu
-		if(spieler[i].id != -1 && spieler[i].sockDesc != 0){
-			PLAYERLIST playerlist;
-			playerlist.id = spieler[i].id;
-			strncpy(playerlist.playername, spieler[i].name, 32);
-			playerlist.score = 0;
-			packet.content.playerlist[i] = playerlist;
-			user_count++;
-		}
+		PLAYERLIST playerlist;
+		playerlist.id = spieler[i].id;
+		strncpy(playerlist.playername, spieler[i].name, PLAYER_NAME_LENGTH);
+		playerlist.score = 0;
+		packet.content.playerlist[i] = playerlist;
 	}
 
 	// Laenge der Message: Anzahl der Spieler * 37 (Groeße der PLAYERLIST)
 	packet.header.length = htons(sizeof(PLAYERLIST) * user_count);
-	// An alle Clients senden
-	for (int c = 0; c < user_count; c++) {
-		if (spieler[c].sockDesc != 0) {
-			// Packet senden
-			sendPacket(packet, spieler[c].sockDesc);
-		}
-	}
+	// PlayerList an alle Clients senden
+	sendToAll(packet);
 }
 
 
 
 // zaehlt aktuelle Anzahl an Spielern
-int countUser() {
+int countUser(){
 	int current_user_count = 0;
-	for(int i = 0; i < 4; i++){
+	for(int i = 0; i < MAX_PLAYERS; i++){
 		// Spieler vorhanden - erhoehe Zaehler
-		if (spieler[i].id != -1) {
+		if((spieler[i].id != -1) && (spieler[i].sockDesc != 0)){
 			current_user_count++;
 		}
 	}
@@ -196,12 +186,8 @@ void sendCatalogChange(){
 	PACKET packet;
 	// hole aktuellen Katalog
 	packet = getActiveCatalog();
-	// gehe Spieler durch und sende Nachricht
-	for (int i = 1; i < 4; i++) {
-		if(spieler[i].id != -1 && spieler[i].sockDesc != 0){
-			sendPacket(packet, spieler[i].sockDesc);
-		}
-	}
+	// sende Nachricht mit aktuellem Katalog an alle
+	sendToAll(packet);
 	return;
 }
 
@@ -225,7 +211,7 @@ void setRank(){
 
 
 // Mutex fuer die Benutzerdaten initalisieren
-int create_user_mutex() {
+int create_user_mutex(){
 	if(pthread_mutex_init(&user_mutex, NULL) != 0){
 		errorPrint("Fehler beim initialisieren des Benutzermutex.");
 		return -1;
@@ -236,14 +222,14 @@ int create_user_mutex() {
 
 
 // Zugriff auf Benutzerdaten sperren
-void user_mutex_lock() {
+void lock_user_mutex(){
 	debugPrint("lock Benutzerdatenmutex.");
 	pthread_mutex_lock(&user_mutex);
 }
 
 
 // Zugriff auf Benutzerdaten erlauben
-void user_mutex_unlock() {
+void unlock_user_mutex(){
 	debugPrint("unlock Benutzerdatenmutex.");
 	pthread_mutex_unlock(&user_mutex);
 }
