@@ -18,4 +18,7 @@ void closeSingleInstance(int);
 void endServer();
 void INThandler(int);
 
+int startLoader();
+int loadCatalogs();
+
 #endif /* MAIN_H_ */

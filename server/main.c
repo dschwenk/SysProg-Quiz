@@ -7,6 +7,7 @@
  * main.c: Hauptprogramm des Servers
  */
 
+#include "main.h"
 #include "common/util.h"
 #include "common/rfc.h"
 #include "login.h"
@@ -15,6 +16,7 @@
 #include "catalog.h"
 #include "common/sockets.h"
 #include "common/networking.h"
+#include "common/server_loader_protocol.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -26,6 +28,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <signal.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 
 
@@ -37,8 +42,35 @@ int server_socket;
 int SingleInstanceFile = 0;
 
 
+// Name
+const char *program_name = "loader";
+// PID Loader
+pid_t forkResult;
+// Groesse Shared Memory
+int shmLen = 20;
+// Handle fuer Shared Memory
+int shmHandle;
+//
+char* shmData;
+// Pipes zum Austausch zwischen Server und Loader
+int stdoutPipe[2];
+int stdinPipe[2];
+
+// Katalogverzeichnis
+char* kat = { "../catalog" };
+
+
+
 void set_port(char* port_str){
-	server_port = atoi(port_str);
+	int port = atoi(port_str);
+	if((port < 65535) && (port > 0)){
+		server_port = port;
+	}
+	else {
+		infoPrint("Port muss zwischen 1 - 65535 sein!\n");
+		infoPrint("Es wird der Standardport 8111 verwendet\n");
+		server_port = 8111;
+	}
 }
 
 int get_port(){
@@ -49,6 +81,7 @@ int get_port(){
 void show_help() {
     printf("Available options:\n");
     printf("    -p --port       specify a port (argument)\n");
+    printf("    -c --catalog    specify a catalog folder (argument)\n");
     printf("    -v --verbose    enable debug output\n");
     printf("    -h --help       show this help message\n");
 }
@@ -67,11 +100,12 @@ void process_commands(int argc, char** argv) {
 	// Standard Port 8111
 	char* server_port = { "8111" };
 
-    const char* short_options = "hvp:";
+    const char* short_options = "hvp:c";
     struct option long_options[] = {
         { "help", no_argument, 0, 'h' },
         { "verbose", no_argument, 0, 'v' },
         { "port", required_argument, 0, 'p' },
+        { "catalog", no_argument, 0, 'c' },
         { NULL, 0, NULL, 0 }
     };
 
@@ -93,6 +127,10 @@ void process_commands(int argc, char** argv) {
 			// Port
 			case 'p':
 				server_port = optarg;
+				break;
+			// Katalog
+			case 'c':
+				kat = optarg;
 				break;
 			case -1:
 				loop = 0;
@@ -167,23 +205,35 @@ void endServer(){
 
 	debugPrint("Beende Server.");
 
-	// Nachricht an alle Clients senden
-	infoPrint("Sende Nachricht an Client: Server wird beendet.");
-	PACKET close_server_packet;
-	close_server_packet.header.type = RFC_ERRORWARNING;
-	close_server_packet.header.length = htons(sizeof(ERROR));
-	close_server_packet.content.error.errortype = ERR_SERVER_CLOSE;
-	strncpy(close_server_packet.content.error.errormessage, "Server beendet", 100);
-	// sende Nachricht
-	sendToAll(close_server_packet);
-	debugPrint("Nachricht ueber Serverende an alle Clients verschickt.");
+	// Nachricht an alle Clients senden - sofern welche angemeldet
+	if(countUser() > 0){
+		infoPrint("Sende Nachricht an Client: Server wird beendet.");
+		PACKET close_server_packet;
+		close_server_packet.header.type = RFC_ERRORWARNING;
+		close_server_packet.header.length = htons(sizeof(ERROR));
+		close_server_packet.content.error.errortype = ERR_SERVER_CLOSE;
+		strncpy(close_server_packet.content.error.errormessage, "Server beendet", 100);
+		// sende Nachricht
+		sendToAll(close_server_packet);
+		debugPrint("Nachricht ueber Serverende an alle Clients verschickt.");
+	}
 
 	// Socket schliessen
 	close(server_socket);
 	debugPrint("Serversocket geschlossen.");
 
-	// TODO
-	// loader beenden, shared memorey
+	// shared memorey
+	// aus Adressraum entfernen
+	munmap(shmData, shmLen);
+	// Objekt schliessen
+	close(shmHandle);
+	// Objekt entfernen
+	shm_unlink(SHMEM_NAME);
+	debugPrint("Shared Memory entfernt.");
+
+	// loader beenden
+	kill(forkResult, SIGINT);
+	debugPrint("Loaderprozess beendet.");
 
 	// SingleInstance-Datei schliessen und loeschen
 	closeSingleInstance(SingleInstanceFile);
@@ -252,9 +302,19 @@ int main(int argc, char ** argv) {
 		exit(0);
 	}
 
-	// TODO
-	// Loader starten
-
+	// Loader starten + Kataloge laden
+	int loader_start_result = startLoader();
+	if(loader_start_result != 0){
+		infoPrint("Fehler beim Starten des Loaders: %i", loader_start_result);
+		endServer();
+		exit(0);
+	}
+	int loader_load_catalogs_result = loadCatalogs();
+	if(loader_load_catalogs_result != 0){
+		infoPrint("Fehler beim Laden der Kataloge: %i", loader_load_catalogs_result);
+		endServer();
+		exit(0);
+	}
 
 	// http://pubs.opengroup.org/onlinepubs/7908799/xsh/sem_init.html
 	// Semaphor fuer Spielerliste / Punktestand initialisieren
@@ -276,10 +336,163 @@ int main(int argc, char ** argv) {
 		exit(0);
 	}
 
-
-
 	// beende Server
 	endServer();
-
 	return 0;
 }
+
+
+int startLoader(){
+	// Pipes erzeugen
+	if(pipe(stdinPipe) == -1 || pipe(stdoutPipe) == -1){
+		errorPrint("Konnte Pipe nicht erzeugen");
+		return 3;
+	}
+	// Kindprozess abspalten
+	forkResult = fork();
+	if(forkResult < 0){
+		errorPrint("Konnte Kindprozess nicht abspalten");
+		return 1;
+	}
+	else if (forkResult == 0){
+		// im Kindprozess
+
+		/* Umleitung der Standardeingabe
+		 *
+		 * damit der Kindprozess anstelle der Konsole die Pipes als Standardein / ausgabe
+		 * verwendet, nutzen wir dup2 - duplicate a file descriptor
+		 *
+		 * int dup2(int oldfd, int newfd);
+		 * Nach dem Aufruf ist oldfd zusätzlich auch als newfd ansprechbar.
+		 *
+		 * Übergeben wir als oldfd das Leseende der Pipe für die Standard-
+		 * eingabe (stdinPipe[0]) und als die Konstante newfd STDIN_FILENO (=0), so
+		 * wird von nun an die Pipe als Standardeingabe für den aktuellen Prozess verwendet.
+		 */
+		if (dup2(stdinPipe[0], STDIN_FILENO) == -1) {
+			errorPrint("dup2(stdinPipe[0], STDIN_FILENO)");
+			return 4;
+		}
+
+		// Umleitung der Standardausgabe
+		if (dup2(stdoutPipe[1], STDOUT_FILENO) == -1) {
+			errorPrint("dup2(stdoutPipe[1], STDOUT_FILENO)");
+			return 5;
+		}
+
+		/* Schliessen aller Pipe-Deskriptoren ->
+		 * Die unnoetig offenen Filedeskriptoren auf die Schreibenden der Pipes
+		 * verhindern, dass die Prozesse sich gegenseitig über das Ende der
+		 * Datenübertragung benachrichtigen können, denn das Dateiende einer Pipe
+		 * gilt genau dann als erreicht, wenn alle Filedeskriptoren für das
+		 * Schreibende geschlossen wurden.
+		 */
+		close(stdinPipe[0]);
+		close(stdoutPipe[1]);
+		close(stdinPipe[1]);
+		close(stdoutPipe[0]);
+
+		// Anderes Programm in die vorbereitete Prozessumgebung laden
+		// param -d Loader Debugausgabe
+		execl(program_name, program_name, "-d", kat, NULL); /* Neues Programm läuft... */
+		errorPrint("exec error"); /* ...oder auch nicht, dann war's aber ein Fehler */
+	}
+	else {
+		/* im Elternprozess */
+
+		// Schliessen der hier nicht benoetigten Enden der Pipes
+		close(stdinPipe[0]);
+		close(stdoutPipe[1]);
+	}
+	return 0;
+}
+
+
+
+int loadCatalogs(){
+
+	// BROWSE_CMD - Kataloge auflisten
+	if(write(stdinPipe[1], BROWSE_CMD, strlen(BROWSE_CMD))	< strlen(BROWSE_CMD)){
+		errorPrint("\nSenden der Nachricht über Pipe fehlgeschlagen: ");
+		return 1;
+	}
+
+	// Zeilenumbruch
+	if (write(stdinPipe[1], "\n", 1) < 1) {
+		errorPrint("Senden der Nachricht über Pipe fehlgeschlagen: ");
+		return 2;
+	}
+
+	// Katalogname
+	char* message;
+	// Zaehlvariable fuer Anzahl Kataloge
+	int i = 0;
+	int err = 0;
+
+	while(err > -1){
+		// Daten aus dem Leseende von stdoutPipe lesen
+		message = readLine(stdoutPipe[0]);
+		// pruefe ob Zeilenumbruch
+		err = strcmp(message, "\n");
+		if(err > -1){
+			// Katalog hinzufuegen
+			addCatalog(message, i);
+			i++;
+		}
+	}
+	infoPrint("Kataloge eingelesen: %i\n", i);
+	return 0;
+}
+
+/*
+void LoaderQuestions(char* name) {
+	char* message;
+	int loaded;
+
+	shm_unlink(SHMEM_NAME);
+	if (write(stdinPipe[1], LOAD_CMD_PREFIX, strlen(LOAD_CMD_PREFIX))
+			< strlen(LOAD_CMD_PREFIX)) {
+		infoPrint("\nSenden der Nachricht über Pipe fehlgeschlagen: ");
+		CloseSock();
+		exit(0);
+	}
+	if (write(stdinPipe[1], name, strlen(name)) < strlen(name)) {
+		infoPrint("Senden der Nachricht über Pipe fehlgeschlagen: ");
+		CloseSock();
+		exit(0);
+	}
+
+	// Enter
+	if (write(stdinPipe[1], "\n", 1) < 1) {
+		infoPrint("Senden der Nachricht über Pipe fehlgeschlagen: ");
+		CloseSock();
+		exit(0);
+	}
+	message = readLine(stdoutPipe[0]);
+	if (strcmp(message, LOAD_SUCCESS_PREFIX) != -1) {
+		infoPrint("SUCCESS");
+		memmove(message, message + sizeof(LOAD_SUCCESS_PREFIX) - 1, 50);
+		loaded = atoi(message);
+		infoPrint("Loaded: %i", loaded);
+	} else {
+		infoPrint("ERROR");
+		infoPrint(message);
+		CloseSock();
+		exit(0);
+	}
+
+	shmHandle = shm_open(SHMEM_NAME, O_RDONLY, 0);
+	if (shmHandle == -1) {
+		infoPrint("Konnte Shared Memory nicht öffnen!");
+		CloseSock();
+		exit(0);
+	}
+	shmLen = loaded * sizeof(Question);
+	shmData = mmap(NULL, shmLen, PROT_READ, MAP_SHARED, shmHandle, 0);
+
+	setShMem(shmData);
+
+	return;
+
+}
+*/

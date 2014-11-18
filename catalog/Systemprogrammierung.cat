@@ -1,0 +1,75 @@
+Ein Thread soll auf ein durch einen anderen Thread ausgelöstes Ereignis warten. Welcher Mechanismus oder welche Mechanismen sind dafür geeignet?
+TIMEOUT: 30
++ Semaphore
+- Mutexe
+- sleep
+- Timer
+
+Der Systemaufruf fork...
+TIMEOUT: 20
++ ...erzeugt einen neuen Prozess, der das gleiche Programm ausführt.
+- ...erzeugt einen neuen Prozess, der ein anderes Programm ausführt.
+- ...erzeugt einen neuen Thread.
+- ...ist das logische Gegenstück zum Aufruf knife.
+
+In einem Signalhandler...
+TIMEOUT: 30
++ ...dürfen nur bestimmte Funktionen aufgerufen werden.
+- ...kann man problemlos alles machen, was man auch im regulären Programmcode macht.
+- ...dürfen keine Fließkommaoperationen durchgeführt werden.
+- ...ist nur der Systemaufruf write verboten.
+
+Sie möchten eine Datenstruktur vor gleichzeitigem Zugriff aus mehreren Threads schützen. Welcher Mechanismus oder welche Mechanismen sind dafür geeignet?
+TIMEOUT: 30
++ Semaphore
++ Mutexe
+- sleep
+- Timer
+
+Es soll darauf gewartet werden, dass Daten eintreffen, allerdings nur eine bestimmte Zeit. Wie kann man das umsetzen?
+TIMEOUT: 30
++ mit dem Systemaufruf select
+- durch einen zusätzlichen Timeout-Parameter bei read oder recv
+- gar nicht
+- durch Setzen des Timeout-Status mit fcntl
+
+Mit welchem Systemaufruf kann man den Port festlegen, auf dem ein Serverprogramm auf Verbindungen wartet?
++ bind
+- accept
+- setsock
+- open
+
+Während eines read-Aufrufs tritt ein Signal auf und wird durch einen Signalhandler abgearbeitet (SA_RESTART nicht gesetzt). Was passiert?
+TIMEOUT: 45
++ Der Aufruf kehrt unter Umständen mit weniger Daten als angefordert oder EINTR zurück.
+- Es werden auf jeden Fall so viele Daten gelesen wie angefordert.
+- Die Daten gehen verloren.
+- Das Programm wird in solchen Fällen vom Betriebssystem abgebrochen.
+
+Beim Lesen aus einer Pipe meldet der Aufruf read das Dateiende, wenn...
+TIMEOUT: 20
++ ...alle Schreib-Deskriptoren für die Pipe geschlossen und alle Daten aus der Pipe gelesen wurden.
+- ...der Leser ein spezielles Signal erhält.
+- ...der schreibende Prozess fork aufruft.
+- ...^D in die Pipe geschrieben wird.
+
+Welche der folgenden Resourcen werden beim Beenden eines Prozesses nicht automatisch freigegeben?
+TIMEOUT: 45
++ Shared-Memory-Bereiche
++ Dateien
++ benannte POSIX-Semaphore (mit sem_open erzeugt)
+- offene Filedeskriptoren
+
+Welche dieser Signale können nicht abgefangen werden?
+TIMEOUT: 45
++ SIGKILL
++ SIGSTOP
+- SIGTERM
+- SIGINT
+
+Was ist ein Zombie-Prozess unter Unix?
+TIMEOUT: 30
++ Ein Prozess, dessen Exit-Status noch nicht mittels wait abgefragt wurde.
+- Ein Daemon-Prozess, der durch den Aufruf zombie immun gegen das KILL-Signal gemacht wurde.
+- Ein Prozess, der nur nachts gestartet werden kann.
+- Ein Computervirus.

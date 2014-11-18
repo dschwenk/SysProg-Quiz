@@ -39,8 +39,8 @@ PACKET activeCatalog;
 /*
  * Funktion die einen Katalog zur Verwaltung hinzufuegt
  *
- * char* name
- * int i
+ * param char* name Name des Katalogs
+ * param int i Zaehler / Katalognummer
  */
 int addCatalog(char* name, int i) {
 	// pruefe ob Katalognamen 'gueltig'
