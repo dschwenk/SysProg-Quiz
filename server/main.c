@@ -42,7 +42,7 @@ int server_socket;
 int SingleInstanceFile = 0;
 
 
-// Name
+// Name von loader
 const char *program_name = "loader";
 // PID Loader
 pid_t forkResult;
@@ -57,7 +57,7 @@ int stdoutPipe[2];
 int stdinPipe[2];
 
 // Katalogverzeichnis
-char* kat = { "../catalog" };
+char* catalog_dir = { "../catalog" };
 
 
 
@@ -130,7 +130,7 @@ void process_commands(int argc, char** argv) {
 				break;
 			// Katalog
 			case 'c':
-				kat = optarg;
+				catalog_dir = optarg;
 				break;
 			case -1:
 				loop = 0;
@@ -394,7 +394,8 @@ int startLoader(){
 
 		// Anderes Programm in die vorbereitete Prozessumgebung laden
 		// param -d Loader Debugausgabe
-		execl(program_name, program_name, "-d", kat, NULL); /* Neues Programm läuft... */
+		// param Katalogverzeichnis
+		execl(program_name, program_name, "-d", catalog_dir, NULL); /* Neues Programm läuft... */
 		errorPrint("exec error"); /* ...oder auch nicht, dann war's aber ein Fehler */
 	}
 	else {

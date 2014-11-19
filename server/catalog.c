@@ -35,6 +35,10 @@ bool is_catalog_chosen = false;
 // ?
 PACKET activeCatalog;
 
+// String Shared-Memory
+char* shmem;
+
+
 
 /*
  * Funktion die einen Katalog zur Verwaltung hinzufuegt
@@ -113,15 +117,16 @@ bool isCatalogChosen(){
 }
 
 
-/*
+// setzte Shared-Memory Name
 void setShMem(char* sh) {
 	shmem = sh;
 	return;
 }
 
+// TODO
 Question* getQuestion(int pos) {
 	Question* QPtr = shmem + pos*(sizeof(Question));
 	return QPtr;
 
 }
-*/
+

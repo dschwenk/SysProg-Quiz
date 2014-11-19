@@ -212,6 +212,8 @@ void setRank(){
 
 // Mutex fuer die Benutzerdaten initalisieren
 int create_user_mutex(){
+	// initialisiere Mutex, NULL -> Standardwerte
+	// http://www.lehman.cuny.edu/cgi-bin/man-cgi?pthread_mutex_init+3
 	if(pthread_mutex_init(&user_mutex, NULL) != 0){
 		errorPrint("Fehler beim initialisieren des Benutzermutex.");
 		return -1;
@@ -224,6 +226,8 @@ int create_user_mutex(){
 // Zugriff auf Benutzerdaten sperren
 void lock_user_mutex(){
 	debugPrint("lock Benutzerdatenmutex.");
+	// lock mutex
+	// http://pubs.opengroup.org/onlinepubs/7908799/xsh/pthread_mutex_lock.html
 	pthread_mutex_lock(&user_mutex);
 }
 
@@ -231,5 +235,7 @@ void lock_user_mutex(){
 // Zugriff auf Benutzerdaten erlauben
 void unlock_user_mutex(){
 	debugPrint("unlock Benutzerdatenmutex.");
+	// unlock mutex
+	// http://linux.die.net/man/3/pthread_mutex_unlock
 	pthread_mutex_unlock(&user_mutex);
 }
