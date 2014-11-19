@@ -206,8 +206,8 @@ void endServer(){
 	debugPrint("Beende Server.");
 
 	// Nachricht an alle Clients senden - sofern welche angemeldet
+	debugPrint("Sende Nachricht an Clients (sofern welche angemeldet sind): Server wird beendet.");
 	if(countUser() > 0){
-		infoPrint("Sende Nachricht an Client: Server wird beendet.");
 		PACKET close_server_packet;
 		close_server_packet.header.type = RFC_ERRORWARNING;
 		close_server_packet.header.length = htons(sizeof(ERROR));

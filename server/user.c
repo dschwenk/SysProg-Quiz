@@ -98,14 +98,15 @@ int addPlayer(char *name, int length, int sock){
  *
  */
 int removePlayer(int id) {
+	debugPrint("Loesche Spieler - setzte Daten auf Standard zurueck!");
 	int i = 0;
 	int current_user_count = countUser();
+	lock_user_mutex();
 	// suche Spieler im Array
 	while(spieler[i].id != id){
 		i++;
 	}
 	// setze Werte auf Standardwerte zurueck
-	debugPrint("Loesche Spieler - setzte Daten auf Standard zurueck!");
 	spieler[i].id = -1;
 	spieler[i].name[0] = '\0';
 	spieler[i].sockDesc = 0;
@@ -117,6 +118,7 @@ int removePlayer(int id) {
 		spieler[i+1] = temp;
 		i++;
 	}
+	unlock_user_mutex();
 	// aktualisiere Spielstand / Rangfolge
 	setPlayerRanking();
 	// sende PlayerList an alle Spieler
@@ -133,8 +135,8 @@ int removePlayer(int id) {
  *
  */
 void sendToAll(PACKET packet) {
-	int current_count_players = countUser();
 	debugPrint("Sende Paket an alle Spieler.");
+	int current_count_players = countUser();
 	// gehe alle Spieler durch und Sende Nachricht
 	for(int i = 0; i < current_count_players; i++){
 		sendPacket(packet, spieler[i].sockDesc);
@@ -146,6 +148,7 @@ void sendToAll(PACKET packet) {
 
 // sende PlayerList an alle Spieler
 void sendPlayerList(){
+	debugPrint("Spielerliste senden.");
 
 	PACKET packet;
 	packet.header.type = RFC_PLAYERLIST;
@@ -161,8 +164,6 @@ void sendPlayerList(){
 		packet.content.playerlist[i] = playerlist;
 	}
 
-	debugPrint("Sende Spielerliste an alle.");
-
 	// Laenge der Message: Anzahl der Spieler * 37 (Groeße der PLAYERLIST)
 	packet.header.length = htons(sizeof(PLAYERLIST) * user_count);
 	// PlayerList an alle Clients senden
@@ -173,7 +174,8 @@ void sendPlayerList(){
 
 // zaehlt aktuelle Anzahl an Spielern
 int countUser(){
-	debugPrint("Zaehle aktive, angemeldete Benutzer.");
+	lock_user_mutex();
+	debugPrint("Zaehle aktuell angemeldete Spieler.");
 	int current_user_count = 0;
 	for(int i = 0; i < MAX_PLAYERS; i++){
 		// Spieler vorhanden - erhoehe Zaehler
@@ -181,6 +183,7 @@ int countUser(){
 			current_user_count++;
 		}
 	}
+	unlock_user_mutex();
 	// gebe Anzahl an Spielern zurueck
 	return current_user_count;
 }
