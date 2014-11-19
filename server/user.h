@@ -23,15 +23,15 @@ typedef struct player {
 } PLAYER;
 
 
+int create_user_mutex();
+void lock_user_mutex();
+void unlock_user_mutex();
 void initSpielerverwaltung();
 int addPlayer(char*,int,int);
 void sendToAll(PACKET);
 void sendPlayerList();
-int create_user_mutex();
-void lock_user_mutex();
-void unlock_user_mutex();
 int countUser();
 void sendCatalogChange();
-void setRank();
+void setPlayerRanking();
 
 #endif

@@ -32,6 +32,7 @@ pthread_mutex_t user_mutex;
 
 // Initialisiere Spielerarray
 void initSpielerverwaltung(){
+	debugPrint("Initialisiere Spielervewaltung.");
 	// initialisiere Spieler mit Standardwerten
 	for(int i = 0; i < MAX_PLAYERS; i++){
 		spieler[i].id = -1;
@@ -53,6 +54,7 @@ void initSpielerverwaltung(){
  * return ID des Users, falscher Name(-1) oder max. Anzahl an Spieler erreicht (4)
  */
 int addPlayer(char *name, int length, int sock){
+	debugPrint("Fuege Spieler zur Verwaltung hinzu.");
 	name[length] = 0;
 	int current_ids[4] = { 0 };
 	for(int i = 0; i < MAX_PLAYERS; i++){
@@ -116,7 +118,7 @@ int removePlayer(int id) {
 		i++;
 	}
 	// aktualisiere Spielstand / Rangfolge
-	setRank();
+	setPlayerRanking();
 	// sende PlayerList an alle Spieler
 	sendPlayerList();
 	return 0;
@@ -132,6 +134,7 @@ int removePlayer(int id) {
  */
 void sendToAll(PACKET packet) {
 	int current_count_players = countUser();
+	debugPrint("Sende Paket an alle Spieler.");
 	// gehe alle Spieler durch und Sende Nachricht
 	for(int i = 0; i < current_count_players; i++){
 		sendPacket(packet, spieler[i].sockDesc);
@@ -158,6 +161,8 @@ void sendPlayerList(){
 		packet.content.playerlist[i] = playerlist;
 	}
 
+	debugPrint("Sende Spielerliste an alle.");
+
 	// Laenge der Message: Anzahl der Spieler * 37 (Groeße der PLAYERLIST)
 	packet.header.length = htons(sizeof(PLAYERLIST) * user_count);
 	// PlayerList an alle Clients senden
@@ -168,6 +173,7 @@ void sendPlayerList(){
 
 // zaehlt aktuelle Anzahl an Spielern
 int countUser(){
+	debugPrint("Zaehle aktive, angemeldete Benutzer.");
 	int current_user_count = 0;
 	for(int i = 0; i < MAX_PLAYERS; i++){
 		// Spieler vorhanden - erhoehe Zaehler
@@ -183,6 +189,7 @@ int countUser(){
 
 // sende aktuellen Katalog an alle Spieler
 void sendCatalogChange(){
+	debugPrint("Sende aktuellen Katalog an alle Spieler.");
 	PACKET packet;
 	// hole aktuellen Katalog
 	packet = getActiveCatalog();
@@ -194,8 +201,9 @@ void sendCatalogChange(){
 
 
 // sortiere Spieler nach Punkten
-void setRank(){
+void setPlayerRanking(){
 	int current_user_count = countUser();
+	debugPrint("Sortiere Spieler nach Punktzahl.");
 	// gehe Spieler durch
 	for(int i = current_user_count; i >= 0; i--){
 		for(int n = 0; n < (current_user_count - 1); n++){
@@ -214,6 +222,7 @@ void setRank(){
 int create_user_mutex(){
 	// initialisiere Mutex, NULL -> Standardwerte
 	// http://www.lehman.cuny.edu/cgi-bin/man-cgi?pthread_mutex_init+3
+	debugPrint("Initialisiere Benutzermutex.");
 	if(pthread_mutex_init(&user_mutex, NULL) != 0){
 		errorPrint("Fehler beim initialisieren des Benutzermutex.");
 		return -1;

@@ -110,8 +110,9 @@ void* login_main(int sock){
 					// sende Antwort
 					sendPacket(response, client_socket);
 
-					// erstelle Clientthread fuer neu hinzugefuegten Spieler
-					if(response.header.type != 255){
+					// sofern Anmeldung ok - erstelle Clientthread fuer neu hinzugefuegten Spieler
+					if(response.header.type != RFC_ERRORWARNING){
+						// uebergebe Client-ID an Client-Thread
 						pthread_create(&client_threads[client_id], NULL, (void *) &client_thread_main, &client_id);
 					}
 
@@ -131,6 +132,7 @@ void* login_main(int sock){
 			}
 		}
 	}
+	// terminiere Thread
 	pthread_exit(NULL);
 	return NULL;
 }
