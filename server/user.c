@@ -227,7 +227,7 @@ void setPlayerRanking(){
  */
 PLAYER getUser(int client_id){
 	for(int i = 0; i < MAX_PLAYERS; i++){
-		if (spieler[i].id == client_id) {
+		if(spieler[i].id == client_id){
 			return spieler[i];
 		}
 	}

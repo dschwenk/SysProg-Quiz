@@ -182,7 +182,7 @@ void setSingleInstance(int file){
     	exit(1);
     }
 
-    // hole
+    // hole PID des servers
     int pid = getpid();
     if (write(file, &pid, sizeof(pid)) < sizeof(pid)) {
     	debugPrint("write\n");
@@ -219,8 +219,12 @@ void endServer(){
 	}
 
 	// Socket schliessen
-	close(server_socket);
-	debugPrint("Serversocket geschlossen.");
+	if(close(server_socket) == 0){
+		debugPrint("Serversocket geschlossen.");
+	}
+	else {
+		debugPrint("Konnte Serversocket nicht schliessen.");
+	}
 
 	// shared memorey
 	// aus Adressraum entfernen
@@ -232,13 +236,21 @@ void endServer(){
 	debugPrint("Shared Memory entfernt.");
 
 	// loader beenden
-	kill(forkResult, SIGINT);
-	debugPrint("Loaderprozess beendet.");
+	if(kill(forkResult, SIGINT) == 0){
+		debugPrint("Loaderprozess beendet.");
+	}
+	else {
+		debugPrint("Loaderprozess konnte nicht beendet werden.");
+	}
 
 	// SingleInstance-Datei schliessen und loeschen
 	closeSingleInstance(SingleInstanceFile);
-	remove("serverInstancePIDFile");
-	debugPrint("SingleInstanceFile geschlossen und geloescht.");
+	if(remove("serverInstancePIDFile") == 0){
+		debugPrint("SingleInstanceFile geschlossen und geloescht.");
+	}
+	else {
+		debugPrint("Konnte SingleInstanceFile nicht loeschen.");
+	}
 
 	infoPrint("bye ...");
 }
@@ -342,6 +354,7 @@ int main(int argc, char ** argv) {
 }
 
 
+
 int startLoader(){
 	// Pipes erzeugen
 	if(pipe(stdinPipe) == -1 || pipe(stdoutPipe) == -1){
@@ -413,7 +426,7 @@ int startLoader(){
 int loadCatalogs(){
 
 	// BROWSE_CMD - Kataloge auflisten
-	if(write(stdinPipe[1], BROWSE_CMD, strlen(BROWSE_CMD))	< strlen(BROWSE_CMD)){
+	if(write(stdinPipe[1], BROWSE_CMD, strlen(BROWSE_CMD)) < strlen(BROWSE_CMD)){
 		errorPrint("\nSenden der Nachricht über Pipe fehlgeschlagen: ");
 		return 1;
 	}

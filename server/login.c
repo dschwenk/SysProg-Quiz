@@ -51,7 +51,7 @@ void* login_main(int sock){
 	}
 
 	// Threadverwaltung - je Client ein Thread - Thread verwaltet Spielphase
-	pthread_t client_threads[4];
+	pthread_t client_threads[MAX_PLAYERS];
 
 	// Empfaenger-Schleife
 	while(1){
@@ -60,7 +60,7 @@ void* login_main(int sock){
 			// Bei erfolgreichem Request wird Connection aufgebaut
 			client_socket = accept(sock, 0, 0);
 			if(client_socket == -1){
-				perror("Client Socket Connection Fehler");
+				errorPrint("Client Socket Connection Fehler");
 				exit(0);
 			}
 
@@ -92,7 +92,7 @@ void* login_main(int sock){
 						strncpy(response.content.error.errormessage, "Name bereits vorhanden", 100);
 					}
 					// Zu viele Spieler angemeldet
-					else if(client_id >= 4){
+					else if(client_id >= MAX_PLAYERS){
 						errorPrint("Maximale Anzahl an Spielern erreicht!");
 						response.header.type = RFC_ERRORWARNING;
 						response.header.length = htons(sizeof(ERROR));

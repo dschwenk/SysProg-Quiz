@@ -32,7 +32,7 @@ int catalog_count = 0;
 // bool um zu bestimmen ob vom Spielleiter ein Katalog ausgewaehlt wurde
 bool is_catalog_chosen = false;
 
-// ?
+// Paket enthaelt Namen des aktiven / aktuellen Katalogs
 PACKET activeCatalog;
 
 // String Shared-Memory

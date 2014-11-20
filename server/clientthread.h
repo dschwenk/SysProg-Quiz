@@ -10,7 +10,7 @@
 #ifndef CLIENTTHREAD_H
 #define CLIENTTHREAD_H
 
-void CreateClientThread(int, int);
+
 void *client_thread_main(int);
 
 #endif

@@ -37,8 +37,10 @@
 #define ERR_SERVER_MAXCOUNTPLAYERREACHED 101
 #define ERR_SERVER_PLAYERNAMEEXIST 102
 #define ERR_SERVER_GAMEISRUNNING 103
+#define ERR_SERVER_SPIELLEITERLEFTGAME 104
+#define ERR_SERVER_TOOFEWPLAERS 105
 
-#define ERR_CLIENT_CLIENTLEFTGAME 20
+#define ERR_CLIENT_CLIENTLEFTGAME 201
 
 
 // max. Laenge Spielername (inkl. '\0')
@@ -77,7 +79,7 @@ typedef struct {
 typedef union {
 	char playername[PLAYER_NAME_LENGTH];	// LRQ - LoginRequest
 	uint8_t clientid;						// LOK - LoginResponseok
-	char catalogname[CATALOG_NAME_LENGTH];	// CRQ, CCH - CatalogResponse, CatalogChange, StartGame
+	char catalogname[CATALOG_NAME_LENGTH];	// CRQ, CCH, STG - CatalogResponse, CatalogChange, StartGame
 	PLAYERLIST playerlist[MAX_PLAYERS];		// LST - Playerlist
 	QuestionMessage question;				// QRQ - Question
 	uint8_t selection;						// QAN - QuestionAnswered
