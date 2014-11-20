@@ -56,37 +56,30 @@ void initSpielerverwaltung(){
 int addPlayer(char *name, int length, int sock){
 	debugPrint("Fuege Spieler zur Verwaltung hinzu.");
 	name[length] = 0;
-	int current_ids[MAX_PLAYERS] = { 0 };
-	for(int i = 0; i < MAX_PLAYERS; i++){
-		// Auf gleichen Namen pruefen
-		if(strncmp(spieler[i].name, name, length + 1) == 0){
-			infoPrint("Name bereits vorhanden!");
-			return -1;
-		}
-		// Belegte Plaetze erkennen
-		if(spieler[i].id != -1){
-			// es gibt einen Spieler mit der aktuellen ID - merke in current_ids
-			current_ids[spieler[i].id] = 1;
-		}
+	int current_count_user = countUser();
+	lock_user_mutex();
+	// sind noch freie Spielerplaetze vorhanden
+	if(current_count_user >= MAX_PLAYERS){
+		unlock_user_mutex();
+		return MAX_PLAYERS;
 	}
-	// Naechsten leeren Platz suchen
-	for(int i = 0; i < MAX_PLAYERS; i++){
-		// ist noch nicht belegt
-		if(current_ids[i] == 0){
-			for(int c = 0; c < MAX_PLAYERS; c++){
-				if(current_ids[c] == 0){
-					// speicher ID, Name + Socket in Spieler
-					spieler[c].id = i;
-					strncpy(spieler[c].name, name, length + 1);
-					spieler[c].sockDesc = sock;
-					// gebe Spieler-ID zurueck
-					return i;
-				}
+	else {
+		// pruefe auf gleichen Namen
+		for(int i = 0; i < current_count_user; i++){
+			if(strncmp(spieler[i].name, name, length + 1) == 0){
+				unlock_user_mutex();
+				return -1;
 			}
 		}
+		// fuege Spieler zur Verwaltung hinzu
+		int new_id = current_count_user;
+		spieler[new_id].id = new_id;
+		strncpy(spieler[new_id].name, name, length + 1);
+		spieler[new_id].sockDesc = sock;
+		// gebe Spieler-ID zurueck
+		unlock_user_mutex();
+		return new_id;
 	}
-	// kein freier Platz - max. Anzahl an Spielern erreicht
-	return 4;
 }
 
 

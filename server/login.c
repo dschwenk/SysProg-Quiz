@@ -75,13 +75,13 @@ void* login_main(int sock){
 
 				PACKET response;
 
-				// sofern Spiel nicht laeft
+				// sofern Spiel nicht laeuft
 				if(!game_running){
 
 					// fuege Spieler zur Verwaltung hinzu, uebergebe Name + Socketdeskriptor
-					lock_user_mutex();
+					// lock_user_mutex();
 					client_id = addPlayer(packet.content.playername,ntohs(packet.header.length), client_socket);
-					unlock_user_mutex();
+					// unlock_user_mutex();
 
 					// Name bereits vorhanden
 					if(client_id == -1){

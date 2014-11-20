@@ -31,7 +31,7 @@ void sendPacket(PACKET packet, int socketDeskriptor){
 	// Laenge
 	send(socketDeskriptor, &packet, ntohs(packet.header.length)+3,0);
 	// Testweise ausgeben welcher Typ an welchen Socket versendet wurde
-	printf("Ein Packet vom Type %i wurde an die SockID: %i versandt\n", packet.header.type, socketDeskriptor);
+	printf("Nachicht vom Type %i an die Socket-ID: %i gesendet\n", packet.header.type, socketDeskriptor);
 }
 
 
