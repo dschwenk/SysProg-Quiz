@@ -56,7 +56,7 @@ void initSpielerverwaltung(){
 int addPlayer(char *name, int length, int sock){
 	debugPrint("Fuege Spieler zur Verwaltung hinzu.");
 	name[length] = 0;
-	int current_ids[4] = { 0 };
+	int current_ids[MAX_PLAYERS] = { 0 };
 	for(int i = 0; i < MAX_PLAYERS; i++){
 		// Auf gleichen Namen pruefen
 		if(strncmp(spieler[i].name, name, length + 1) == 0){
@@ -73,7 +73,7 @@ int addPlayer(char *name, int length, int sock){
 	for(int i = 0; i < MAX_PLAYERS; i++){
 		// ist noch nicht belegt
 		if(current_ids[i] == 0){
-			for(int c = 0; c < 4; c++){
+			for(int c = 0; c < MAX_PLAYERS; c++){
 				if(current_ids[c] == 0){
 					// speicher ID, Name + Socket in Spieler
 					spieler[c].id = i;
@@ -94,16 +94,16 @@ int addPlayer(char *name, int length, int sock){
 /*
  * Entfernt Spieler aus der UserListe
  *
- * int id ID des Spielers der entfernt wird
+ * int client_id ID des Spielers der entfernt wird
  *
  */
-int removePlayer(int id) {
+int removePlayer(int client_id){
 	debugPrint("Loesche Spieler - setzte Daten auf Standard zurueck!");
 	int i = 0;
 	int current_user_count = countUser();
 	lock_user_mutex();
 	// suche Spieler im Array
-	while(spieler[i].id != id){
+	while(spieler[i].id != client_id){
 		i++;
 	}
 	// setze Werte auf Standardwerte zurueck
@@ -219,6 +219,20 @@ void setPlayerRanking(){
 		}
 	}
 }
+
+
+/*
+ * gebe Spieler zurueck
+ * param int client_id ID des Spielers
+ */
+PLAYER getUser(int client_id){
+	for(int i = 0; i < MAX_PLAYERS; i++){
+		if (spieler[i].id == client_id) {
+			return spieler[i];
+		}
+	}
+}
+
 
 
 // Mutex fuer die Benutzerdaten initalisieren

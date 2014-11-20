@@ -67,9 +67,9 @@ int addCatalog(char* name, int i) {
 /*
  * Funktion um verfuegbare Kataloge an Client zu senden
  *
- * int cSock
+ * int client_socket Socketdeskriptor des Clients
  */
-int sendCatalog(int cSock) {
+int sendCatalog(int client_socket) {
 	PACKET send_catalog_packet;
 	send_catalog_packet.header.type = RFC_CATALOGRESPONSE;
 	// gehe alle verfuegbaren Kataloge durch
@@ -79,13 +79,13 @@ int sendCatalog(int cSock) {
 		// kopiere Katalogname in Paket
 		strncpy(send_catalog_packet.content.catalogname, catalog_array[i].CatalogName,sizeof(catalog_array[i].CatalogName));
 		debugPrint("Sende Katalog an Client.");
-		sendPacket(send_catalog_packet, cSock);
+		sendPacket(send_catalog_packet, client_socket);
 	}
 	// sende zum Abschluss einen leeren RFC_CATALOGRESPONSE --> alle Kataloge uebertragen
 	send_catalog_packet.header.length = htons(0);
 	strncpy(send_catalog_packet.content.catalogname, "", sizeof(""));
 	debugPrint("Sende leeres Katalogpacket zum Abschluss an Client.");
-	sendPacket(send_catalog_packet, cSock);
+	sendPacket(send_catalog_packet, client_socket);
 	return 1;
 }
 

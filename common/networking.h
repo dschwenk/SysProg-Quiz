@@ -17,7 +17,7 @@
 
 
 void sendPacket(PACKET, int);
-PACKET recvPacket (int);
+PACKET recvPacket(int);
 
 
 #endif

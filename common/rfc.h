@@ -38,6 +38,9 @@
 #define ERR_SERVER_PLAYERNAMEEXIST 102
 #define ERR_SERVER_GAMEISRUNNING 103
 
+#define ERR_CLIENT_CLIENTLEFTGAME 20
+
+
 // max. Laenge Spielername (inkl. '\0')
 #define PLAYER_NAME_LENGTH 32
 // max. Laenge Katalogname (inkl. '\0')

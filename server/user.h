@@ -28,10 +28,12 @@ void lock_user_mutex();
 void unlock_user_mutex();
 void initSpielerverwaltung();
 int addPlayer(char*,int,int);
+int removePlayer(int);
 void sendToAll(PACKET);
 void sendPlayerList();
 int countUser();
 void sendCatalogChange();
 void setPlayerRanking();
+PLAYER getUser(int);
 
 #endif
