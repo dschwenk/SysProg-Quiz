@@ -49,15 +49,17 @@ void receivePlayerlist(PACKET packet){
 
 
 void receiveErrorMessage (PACKET packet){
-	char message[(ntohs (packet.header.length))];
+	char error_message[100];
 	// hole Errornachricht
-	strncpy (message, packet.content.error.errormessage, ntohs (packet.header.length)-1);
+	strncpy (error_message, packet.content.error.errormessage, ntohs (packet.header.length)-1);
 	// Nullterminierung
-	message[ntohs (packet.header.length)-1]= '\0';
+	error_message[ntohs (packet.header.length)-1]= '\0';
 	// zeige Errordialog + gebe Fehler auf Konsole aus
-	printf("Fehler: %s\n", packet.content.error.errormessage);
-	guiShowErrorDialog(message, packet.content.error.errortype);
-	if(packet.content.error.errortype==1){
+	errorPrint("Fehler: %s\n", packet.content.error.errormessage);
+	// zeige Fehler in GUI
+	guiShowErrorDialog(error_message, packet.content.error.errortype);
+	// beende Client falls fataler Error
+	if(packet.content.error.errortype == 1){
 		exit(0);
 	}
 }

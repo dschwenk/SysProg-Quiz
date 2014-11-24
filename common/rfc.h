@@ -29,10 +29,13 @@
 #define RFC_QUESTIONANSWERED     10 // Quiz-Frage wurde beantwortet
 #define RFC_QUESTIONRESULT       11 // Auswertung einer Antwort auf eine Quiz-Frage
 #define RFC_GAMEOVER             12 // Alle Clients sind fertig, Mitteilung ueber Endplatzierung
-#define RFC_ERRORWARNING         255 // Fehlermeldung an den Client
+#define RFC_ERRORWARNING         255 // Fehlermeldung
 
 
 // selbst definierte Warnung-/Fehlertypen + Konstanten
+#define ERR_WARNING 0
+#define ERR_FATAL 1
+
 #define ERR_SERVER_CLOSE 100
 #define ERR_SERVER_MAXCOUNTPLAYERREACHED 101
 #define ERR_SERVER_PLAYERNAMEEXIST 102
