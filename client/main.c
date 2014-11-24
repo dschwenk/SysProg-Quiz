@@ -214,40 +214,37 @@ int main(int argc, char **argv){
 
 void preparation_onCatalogChanged(const char *newSelection) {
 	debugPrint("Katalogauswahl: %s", newSelection);
-
     PACKET packet;
     packet.header.type = RFC_CATALOGCHANGE;
-    debugPrint("TEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEST");
     packet.header.length = htons(strlen(newSelection));
-    printf("catalog changed\n");
     strncpy(packet.content.catalogname, newSelection, strlen(newSelection));
-    printf("Laenge des Katalogs %i\n",strlen(newSelection));
     sendPacket(packet, socketDeskriptor);
     fflush(stdout);
 }
 
+
 void preparation_onStartClicked(const char *currentSelection) {
     debugPrint("Starte Katalog %s\n", currentSelection);
-
     PACKET packet;
     packet.header.type = RFC_STARTGAME;
     packet.header.length = htons(strlen(currentSelection));
     //preparation_hideWindow();
     strncpy(packet.content.catalogname, currentSelection, strlen(currentSelection));
-
     sendPacket(packet, socketDeskriptor);
 }
+
 
 void preparation_onWindowClosed(void) {
 	debugPrint("Vorbereitungsfenster geschlossen");
     PACKET packet;
     packet.header.type = RFC_ERRORWARNING;
-    packet.header.length = htons(0);
+    packet.header.length = htons(strlen("Der Spieler hat das Spiel verlassen!"));
     packet.content.error.errortype = ERR_CLIENT_CLIENTLEFTGAME;
+    strncpy(packet.content.error.errormessage,"Der Spieler hat das Spiel verlassen!",ntohs(packet.header.length));
     sendPacket(packet, socketDeskriptor);
-
     guiQuit();
 }
+
 
 void game_onAnswerClicked(int index) {
 	debugPrint("Antwort %i ausgewählt", index);
@@ -264,9 +261,9 @@ void game_onWindowClosed(void) {
 	debugPrint("Spielfenster geschlossen");
     PACKET packet;
     packet.header.type = RFC_ERRORWARNING;
-    packet.header.length = htons(0);
+    packet.header.length = htons(strlen("Der Spieler hat das Spiel verlassen!"));
     packet.content.error.errortype = ERR_CLIENT_CLIENTLEFTGAME;
+    strncpy(packet.content.error.errormessage,"Der Spieler hat das Spiel verlassen!",ntohs(packet.header.length));
     sendPacket(packet, socketDeskriptor);
-
-	guiQuit();
+    guiQuit();
 }

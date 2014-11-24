@@ -254,6 +254,7 @@ void endServer(){
 	}
 
 	infoPrint("bye ...");
+	exit(0);
 }
 
 

@@ -49,8 +49,8 @@ void receivePlayerlist(PACKET packet){
 }
 
 void receiveCatalogList(PACKET packet) {
-    // TODO Antwort auswerten und anzeigen
-    printf("%s", packet.content.catalogname);
+    // Antwort auswerten und anzeigen
+    infoPrint("%s", packet.content.catalogname);
     preparation_addCatalog(packet.content.catalogname);
 }
 
@@ -63,9 +63,10 @@ void receiveErrorMessage (PACKET packet){
 	// zeige Errordialog + gebe Fehler auf Konsole aus
 	errorPrint("Fehler: %s\n", packet.content.error.errormessage);
 	// zeige Fehler in GUI
+	// guiShowMessageDialog(error_message, packet.content.error.errortype);
 	guiShowErrorDialog(error_message, packet.content.error.errortype);
 	// beende Client falls fataler Error
-	if(packet.content.error.errortype == 1){
+	if((packet.content.error.errortype == ERR_SERVER_SPIELLEITERLEFTGAME) || (packet.content.error.errortype == ERR_SERVER_TOOFEWPLAERS)){
 		exit(0);
 	}
 }
@@ -112,13 +113,13 @@ void *listener_main(int * sockD){
         preparation_setMode(PREPARATION_MODE_NORMAL);
     }
 
-
+    // Empfangsschleife
 	int stop = 0;
 	while(stop==0){
 		PACKET packet = recvPacket(*sockD);
 		switch (packet.header.type){
             // RFC_CATALOGRESPONSE
-            case 4:
+            case RFC_CATALOGRESPONSE:
                 receiveCatalogList(packet);
                 break;
             // RFC_CATALOGCHANGE
@@ -126,11 +127,17 @@ void *listener_main(int * sockD){
                 preparation_selectCatalog(packet.content.catalogname);
                 break;
 			// RFC_PLAYERLIST
-			case 6:
+			case RFC_PLAYERLIST:
 				receivePlayerlist(packet);
 				break;
+			// RFC_STARTGAME
+			case RFC_STARTGAME:
+				// Vorbereitungsfenster ausblenden und Spielfenster anzeigen
+				game_showWindow();
+				preparation_hideWindow();
+				break;
 			// RFC_ERRORWARNING
-			case 255:
+			case RFC_ERRORWARNING:
 				receiveErrorMessage(packet);
 				break;
 			default:

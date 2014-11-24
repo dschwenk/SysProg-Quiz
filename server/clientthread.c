@@ -127,11 +127,31 @@ void *client_thread_main(int* client_id) {
 					// sende Katalogwechsel an alle Spieler
 					sendCatalogChange();
 					break;
-
-				// TODO
 				case RFC_STARTGAME:
 					// pruefe Anzahl angemelder Spieler - >= 2 Spieler zum Spielstart benoetigt
-					// ...
+					// zu wenig Spieler - Spiel wird nicht gestartet
+					if(countUser() < 2){
+						infoPrint("Zu wenige Spieler um das Spiel zu starten!");
+						response.header.type = RFC_ERRORWARNING;
+						response.header.length = htons(strlen("Zu wenige Spieler um das Spiel zu starten!"));
+						response.content.error.errortype = ERR_SERVER_COULDNOTSTARTGAME;
+						strncpy(response.content.error.errormessage,"Zu wenige Spieler um das Spiel zu starten!", ntohs(response.header.length));
+						sendPacket(response, spieler.sockDesc);
+						// SendToAll(response);
+					}
+					// Spiel wird gestartet
+					else {
+						setGameRunning();
+						char catalog[31];
+						strncpy(catalog, packet.content.catalogname,ntohs(packet.header.length));
+						catalog[ntohs(packet.header.length)] = '\0';
+						// LoaderQuestions(kat);
+						// QNumber = 0;
+						// user_mutex_lock();
+						// sende Paket mit aktuellem Katalog an alle Spieler
+						sendToAll(packet);
+						// user_mutex_unlock();
+					}
 					break;
 				case RFC_QUESTIONREQUEST:
 					// ....
