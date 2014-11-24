@@ -107,14 +107,15 @@ void* login_main(int sock){
 						response.content.clientid = client_id;
 					}
 
+                    // sofern Anmeldung ok - erstelle Clientthread fuer neu hinzugefuegten Spieler
+                    if(response.header.type != RFC_ERRORWARNING){
+                        // uebergebe Client-ID an Client-Thread
+                        printf("Erstelle Client-Thread");
+                        pthread_create(&client_threads[client_id], NULL, (void *) &client_thread_main, &client_id);
+                    }
+
 					// sende Antwort
 					sendPacket(response, client_socket);
-
-					// sofern Anmeldung ok - erstelle Clientthread fuer neu hinzugefuegten Spieler
-					if(response.header.type != RFC_ERRORWARNING){
-						// uebergebe Client-ID an Client-Thread
-						pthread_create(&client_threads[client_id], NULL, (void *) &client_thread_main, &client_id);
-					}
 
 					// aktuelle Spielerliste an alle Spieler senden
 					sendPlayerList();

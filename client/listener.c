@@ -12,6 +12,7 @@
 #include "common/rfc.h"
 #include "common/sockets.h"
 #include "common/networking.h"
+#include "main.h"
 
 #include <netinet/in.h>
 #include <stdlib.h>
@@ -47,6 +48,11 @@ void receivePlayerlist(PACKET packet){
 	}
 }
 
+void receiveCatalogList(PACKET packet) {
+    // TODO Antwort auswerten und anzeigen
+    printf("%s", packet.content.catalogname);
+    preparation_addCatalog(packet.content.catalogname);
+}
 
 void receiveErrorMessage (PACKET packet){
 	char error_message[100];
@@ -65,12 +71,60 @@ void receiveErrorMessage (PACKET packet){
 }
 
 
-
 void *listener_main(int * sockD){
+
+    // warte auf Antwort des Servers
+    PACKET response = recvPacket(*sockD);
+    int clientID;
+
+    // RFC_LOGINRESPONSEOK
+    if(response.header.type == RFC_LOGINRESPONSEOK){
+        infoPrint("Login Response ok\n");
+        clientID = response.content.clientid;
+
+        // RFC_CATALOGREQUEST - get catalog list
+        catalogRequest();
+    }
+        // RFC_ERRORWARNING
+    else if(response.header.type == RFC_ERRORWARNING){
+        char message[(ntohs(response.header.length))];
+        strncpy(message, response.content.error.errormessage,ntohs(response.header.length) - 1);
+        // Nullterminierung
+        message[ntohs(response.header.length) - 1] = '\0';
+        // zeige in GUI Fehlermeldung an
+        infoPrint("Fehler: %s\n", message);
+        guiShowErrorDialog(message, response.content.error.errortype);
+        exit(0);
+    }
+        // Verbindung verloren
+    else {
+        // zeige in GUI Fehlermeldung an
+        infoPrint("Verbindung zum Server verloren!");
+        guiShowErrorDialog("Verbindung zum Server verloren!", response.content.error.errortype);
+        exit(0);
+    }
+
+    //An GUI mitteilen ob Spielleiter oder nicht
+    if(clientID == 0){
+        preparation_setMode(PREPARATION_MODE_PRIVILEGED);
+    }
+    else {
+        preparation_setMode(PREPARATION_MODE_NORMAL);
+    }
+
+
 	int stop = 0;
 	while(stop==0){
 		PACKET packet = recvPacket(*sockD);
 		switch (packet.header.type){
+            // RFC_CATALOGRESPONSE
+            case 4:
+                receiveCatalogList(packet);
+                break;
+            // RFC_CATALOGCHANGE
+            case RFC_CATALOGCHANGE:
+                preparation_selectCatalog(packet.content.catalogname);
+                break;
 			// RFC_PLAYERLIST
 			case 6:
 				receivePlayerlist(packet);

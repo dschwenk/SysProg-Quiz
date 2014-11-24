@@ -23,11 +23,12 @@
 #include <sys/socket.h>
 #include "catalog.h"
 #include <time.h>
-
-
+#include <stdio.h>
 
 
 void *client_thread_main(int* client_id) {
+
+    printf("Entry point client-thread");
 
 	bool is_spielleiter = false;
 
@@ -47,7 +48,11 @@ void *client_thread_main(int* client_id) {
 
 	// Empfangsschleife
 	while(1){
+        printf("entry while");
+
 		packet = recvPacket(spieler.sockDesc);
+
+        printf("clientthread packet: %d", packet.header.type);
 
 		// werte empfangenes Paket aus
 		switch(packet.header.type){
@@ -66,10 +71,10 @@ void *client_thread_main(int* client_id) {
 						response.header.length = htons(strlen("Der Spieleiter hat das Spiel verlassen, der Server wird beendet!"));
 						response.content.error.errortype = ERR_SERVER_SPIELLEITERLEFTGAME;
 						strncpy(response.content.error.errormessage,"Der Spieleiter hat das Spiel verlassen, der Server wird beendet!",	ntohs(response.header.length));
-						lock_user_mutex();
+						//lock_user_mutex();
 						// sende Fehlermeldung an alle
 						sendToAll(response);
-						unlock_user_mutex();
+						//unlock_user_mutex();
 						// Server beenden
 						endServer();
 					}
@@ -77,7 +82,7 @@ void *client_thread_main(int* client_id) {
 					else {
 						debugPrint("Spieler %s (ID: %d) war NICHT Spielleiter", spieler.name, spieler.id);
 						// entferne Spieler aus verwaltung
-						lock_user_mutex();
+						//lock_user_mutex();
 						removePlayer(spieler.id);
 						// pruefe ob Spiel bereits laeft und Anzahl verbliebener Spieler
 						if((getGameRunning()) && (countUser() <= 2)){
@@ -88,13 +93,13 @@ void *client_thread_main(int* client_id) {
 							strncpy(response.content.error.errormessage,"Zu wenig Spieler, breche Spiel ab.",ntohs(response.header.length));
 							// sende Fehlermeldung an alle
 							sendToAll(response);
-							unlock_user_mutex();
+							//unlock_user_mutex();
 							// Server beenden
 							endServer();
 						}
 						// sende Spielerliste an alle verbliebene Spieler
 						sendPlayerList();
-						unlock_user_mutex();
+						//unlock_user_mutex();
 					}
 				}
 				// beende Thread
@@ -104,14 +109,14 @@ void *client_thread_main(int* client_id) {
 				// Client hat Kataloge angefagt - RFC_CATALOGREQUEST
 				case RFC_CATALOGREQUEST:
 					debugPrint("Catalog Request von Spieler-ID: %i Name: %s", spieler.id, spieler.name);
-					lock_user_mutex();
+					//lock_user_mutex();
 					sendCatalog(spieler.sockDesc);
 					// pruefe ob Katalog ausgewaehlt wurde - falls ja sende Katalog
 					if(isCatalogChosen()){
 						// Client erkennt somit den vom Spielleiter ausgewaehlten Katalog
 						sendCatalogChange();
 					}
-					unlock_user_mutex();
+					//unlock_user_mutex();
 					break;
 
 				// Client hat Katalog gewechselt

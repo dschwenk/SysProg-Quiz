@@ -28,7 +28,7 @@
 #include <getopt.h>
 #include <stdbool.h>
 #include <pthread.h>
-
+#include <printf.h>
 
 
 int socketDeskriptor;
@@ -77,6 +77,14 @@ void loginRequest(char* name) {
 	strncpy(packet.content.playername, name, strlen(name));
 	// sende Nachrichtc
 	sendPacket(packet, socketDeskriptor);
+}
+
+void catalogRequest() {
+    PACKET packet;
+    packet.header.type = RFC_CATALOGREQUEST;
+    packet.header.length = htons(0);
+    // sende Nachricht
+    sendPacket(packet, socketDeskriptor);
 }
 
 
@@ -184,44 +192,9 @@ int main(int argc, char **argv){
 		infoPrint("sende LoginReqest\n");
 		loginRequest(name);
 
-		// warte auf Antwort des Servers
-		PACKET response = recvPacket(socketDeskriptor);
-
-		// RFC_LOGINRESPONSEOK
-		if(response.header.type == RFC_LOGINRESPONSEOK){
-	    	infoPrint("Login Response ok\n");
-			clientID = response.content.clientid;
-		}
-		// RFC_ERRORWARNING
-		else if(response.header.type == RFC_ERRORWARNING){
-			char message[(ntohs(response.header.length))];
-			strncpy(message, response.content.error.errormessage,ntohs(response.header.length) - 1);
-			// Nullterminierung
-			message[ntohs(response.header.length) - 1] = '\0';
-			// zeige in GUI Fehlermeldung an
-	    	infoPrint("Fehler: %s\n", message);
-			guiShowErrorDialog(message, response.content.error.errortype);
-			exit(0);
-		}
-		// Verbindung verloren
-		else {
-			// zeige in GUI Fehlermeldung an
-	    	infoPrint("Verbindung zum Server verloren!");
-			guiShowErrorDialog("Verbindung zum Server verloren!", response.content.error.errortype);
-			exit(0);
-		}
-
 		// strate Listener_thread
 		pthread_t Listener_thread;
 		pthread_create(&Listener_thread, NULL, (void *) &listener_main,&socketDeskriptor);
-
-		//An GUI mitteilen ob Spielleiter oder nicht
-		if(clientID == 0){
-			preparation_setMode(PREPARATION_MODE_PRIVILEGED);
-		}
-		else {
-			preparation_setMode(PREPARATION_MODE_NORMAL);
-		}
 
 		//GUI Anzeigen
 		preparation_showWindow();
@@ -241,15 +214,39 @@ int main(int argc, char **argv){
 
 void preparation_onCatalogChanged(const char *newSelection) {
 	debugPrint("Katalogauswahl: %s", newSelection);
+
+    PACKET packet;
+    packet.header.type = RFC_CATALOGCHANGE;
+    debugPrint("TEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEST");
+    packet.header.length = htons(strlen(newSelection));
+    printf("catalog changed\n");
+    strncpy(packet.content.catalogname, newSelection, strlen(newSelection));
+    printf("Laenge des Katalogs %i\n",strlen(newSelection));
+    sendPacket(packet, socketDeskriptor);
+    fflush(stdout);
 }
 
 void preparation_onStartClicked(const char *currentSelection) {
-	debugPrint("Starte Katalog %s", currentSelection);
+    debugPrint("Starte Katalog %s\n", currentSelection);
+
+    PACKET packet;
+    packet.header.type = RFC_STARTGAME;
+    packet.header.length = htons(strlen(currentSelection));
+    //preparation_hideWindow();
+    strncpy(packet.content.catalogname, currentSelection, strlen(currentSelection));
+
+    sendPacket(packet, socketDeskriptor);
 }
 
 void preparation_onWindowClosed(void) {
 	debugPrint("Vorbereitungsfenster geschlossen");
-	guiQuit();
+    PACKET packet;
+    packet.header.type = RFC_ERRORWARNING;
+    packet.header.length = htons(0);
+    packet.content.error.errortype = ERR_CLIENT_CLIENTLEFTGAME;
+    sendPacket(packet, socketDeskriptor);
+
+    guiQuit();
 }
 
 void game_onAnswerClicked(int index) {
@@ -265,5 +262,11 @@ void game_onSubmitClicked(unsigned char selectedAnswers)
 
 void game_onWindowClosed(void) {
 	debugPrint("Spielfenster geschlossen");
+    PACKET packet;
+    packet.header.type = RFC_ERRORWARNING;
+    packet.header.length = htons(0);
+    packet.content.error.errortype = ERR_CLIENT_CLIENTLEFTGAME;
+    sendPacket(packet, socketDeskriptor);
+
 	guiQuit();
 }
