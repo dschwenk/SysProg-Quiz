@@ -26,7 +26,8 @@
 
 
 
-// packetSchreiben
+
+// Nachricht / Paket senden
 void sendPacket(PACKET packet, int socketDeskriptor){
 	// Laenge
 	send(socketDeskriptor, &packet, ntohs(packet.header.length)+3,0);
@@ -35,6 +36,7 @@ void sendPacket(PACKET packet, int socketDeskriptor){
 }
 
 
+// Nachricht / Paket empfangen
 PACKET recvPacket (int socketDeskriptor ){
 
 	// Paket, initialisiere mit Header + Length mit 0
@@ -48,7 +50,7 @@ PACKET recvPacket (int socketDeskriptor ){
 	if(readresult == 0){
 		packet.header.type = 0;
 	}
-	//Socket kann gelesen werden, Übergabe vom content und Länge
+	//Socket kann gelesen werden, empfange Daten
 	else {
 		recv(socketDeskriptor, &(packet.content),ntohs(packet.header.length),0);
 	}
