@@ -95,7 +95,7 @@ void *client_thread_main(int* client_id) {
 							sendToAll(response);
 							//unlock_user_mutex();
 							// Server beenden
-							endServer();
+							// endServer();
 						}
 						// sende Spielerliste an alle verbliebene Spieler
 						sendPlayerList();
