@@ -50,9 +50,24 @@ void receivePlayerlist(PACKET packet){
 
 void receiveCatalogList(PACKET packet) {
     // Antwort auswerten und anzeigen
-    infoPrint("%s", packet.content.catalogname);
-    preparation_addCatalog(packet.content.catalogname);
+    infoPrint("%s", packet.content.catalogname);    
+    if (ntohs(packet.header.length) > 0) {
+	    char buffer[ntohs(packet.header.length)];
+	    strncpy(buffer, packet.content.catalogname,ntohs(packet.header.length));
+	    buffer[ntohs(packet.header.length)] = '\0';
+	    preparation_addCatalog(buffer);
+    }    
 }
+
+void receiveCatalogChange(PACKET packet){	      
+  if (ntohs(packet.header.length) > 0) {
+    char buffer[ntohs(packet.header.length)];
+    strncpy(buffer, packet.content.catalogname, ntohs(packet.header.length));
+    buffer[ntohs(packet.header.length)] = '\0';
+    preparation_selectCatalog(buffer);
+  }  
+}
+
 
 void receiveErrorMessage (PACKET packet){
 	char error_message[100];
@@ -124,24 +139,24 @@ void *listener_main(int * sockD){
                 break;
             // RFC_CATALOGCHANGE
             case RFC_CATALOGCHANGE:
-                preparation_selectCatalog(packet.content.catalogname);
+                receiveCatalogChange(packet);
                 break;
-			// RFC_PLAYERLIST
-			case RFC_PLAYERLIST:
-				receivePlayerlist(packet);
-				break;
-			// RFC_STARTGAME
-			case RFC_STARTGAME:
-				// Vorbereitungsfenster ausblenden und Spielfenster anzeigen
-				game_showWindow();
-				preparation_hideWindow();
-				break;
-			// RFC_ERRORWARNING
-			case RFC_ERRORWARNING:
-				receiveErrorMessage(packet);
-				break;
-			default:
-				break;
+	    // RFC_PLAYERLIST
+	    case RFC_PLAYERLIST:
+		    receivePlayerlist(packet);
+		    break;
+	    // RFC_STARTGAME
+	    case RFC_STARTGAME:
+		    // Vorbereitungsfenster ausblenden und Spielfenster anzeigen
+		    game_showWindow();
+		    preparation_hideWindow();
+		    break;
+	    // RFC_ERRORWARNING
+	    case RFC_ERRORWARNING:
+		    receiveErrorMessage(packet);
+		    break;
+	    default:
+		    break;
 		}
 	}
 	return 0;

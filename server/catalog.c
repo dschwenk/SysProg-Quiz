@@ -49,7 +49,7 @@ char* shmem;
 int addCatalog(char* name, int i) {
 	// pruefe ob Katalognamen 'gueltig'
 	debugPrint("pruefe Katalognamen\n.");
-	if((name == NULL) || (strlen(name) == 0)){
+	if((name == NULL) || (strlen(name) == 0 || name == "\n")){
 		return -1;
 	}
 	// kopiere Katalognamen in Katalogverwaltungsarray
@@ -82,10 +82,12 @@ int sendCatalog(int client_socket) {
 		sendPacket(send_catalog_packet, client_socket);
 	}
 	// sende zum Abschluss einen leeren RFC_CATALOGRESPONSE --> alle Kataloge uebertragen
-	/*send_catalog_packet.header.length = htons(0);
+	/*
+	send_catalog_packet.header.length = htons(0);
 	strncpy(send_catalog_packet.content.catalogname, "", sizeof(""));
 	debugPrint("Sende leeres Katalogpacket zum Abschluss an Client.");
-	sendPacket(send_catalog_packet, client_socket);*/
+	sendPacket(send_catalog_packet, client_socket);
+	*/
 	return 1;
 }
 
