@@ -36,4 +36,11 @@ void vhexdump(const void *ptr, size_t n, const char *fmt, va_list args);
 
 char *readLine(int fd);
 
+/* Funktionen zur Berechnung Antwortzeit - aus dem Systemprogrammierung-Moodlekurs
+ * https://www.elearning.hs-weingarten.de/mod/lesson/view.php?id=23738&pageid=6525
+ */
+struct timespec timespecAdd(const struct timespec*, const struct timespec*);
+struct timespec timespecSub(const struct timespec*, const struct timespec*);
+int cmpTimespec(const struct timespec*, const struct timespec*);
+
 #endif

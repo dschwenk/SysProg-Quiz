@@ -79,9 +79,7 @@ void* login_main(int sock){
 				if(!game_running){
 
 					// fuege Spieler zur Verwaltung hinzu, uebergebe Name + Socketdeskriptor
-					// lock_user_mutex();
 					client_id = addPlayer(packet.content.playername,ntohs(packet.header.length), client_socket);
-					// unlock_user_mutex();
 
 					// Name bereits vorhanden
 					if(client_id == -1){

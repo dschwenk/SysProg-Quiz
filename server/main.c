@@ -288,7 +288,6 @@ void INThandler(int sig) {
  *   param argc Anzahl der Startparameter
  *   param argv Startparameter
  */
-
 int main(int argc, char ** argv) {
 
 	// Der Server soll auf dem lokalen System nur einmal gestartet werden koennen.
@@ -356,7 +355,9 @@ int main(int argc, char ** argv) {
 }
 
 
-
+/*
+ * Funktion startet den Loader als Kindprozess
+ */
 int startLoader(){
 	// Pipes erzeugen
 	if(pipe(stdinPipe) == -1 || pipe(stdoutPipe) == -1){
@@ -424,35 +425,37 @@ int startLoader(){
 }
 
 
-
+/*
+ * Funktion liesst Kataloge aus
+ */
 int loadCatalogs(){
 
 	// BROWSE_CMD - Kataloge auflisten
 	if(write(stdinPipe[1], BROWSE_CMD, strlen(BROWSE_CMD)) < strlen(BROWSE_CMD)){
-		errorPrint("\nSenden der Nachricht über Pipe fehlgeschlagen: ");
+		errorPrint("Senden der Nachricht über Pipe fehlgeschlagen: ");
 		return 1;
 	}
 
 	// Zeilenumbruch
-	if (write(stdinPipe[1], "\n", 1) < 1) {
+	if(write(stdinPipe[1], "\n", 1) < 1){
 		errorPrint("Senden der Nachricht über Pipe fehlgeschlagen: ");
 		return 2;
 	}
 
 	// Katalogname
-	char* message;
+	char* catalogname;
 	// Zaehlvariable fuer Anzahl Kataloge
 	int i = 0;
 	int err = 0;
 
 	while(err > -1){
 		// Daten aus dem Leseende von stdoutPipe lesen
-		message = readLine(stdoutPipe[0]);
+		catalogname = readLine(stdoutPipe[0]);
 		// pruefe ob Zeilenumbruch
-		err = strcmp(message, "\n");
+		err = strcmp(catalogname, "\n");
 		if(err > -1){
 			// Katalog hinzufuegen
-			addCatalog(message, i);
+			addCatalog(catalogname, i);
 			i++;
 		}
 	}
@@ -460,55 +463,73 @@ int loadCatalogs(){
 	return 0;
 }
 
+
 /*
-void LoaderQuestions(char* name) {
+ *
+ *
+ */
+void LoaderQuestions(char* name){
 	char* message;
 	int loaded;
 
+	// remove shared memorey
 	shm_unlink(SHMEM_NAME);
-	if (write(stdinPipe[1], LOAD_CMD_PREFIX, strlen(LOAD_CMD_PREFIX))
-			< strlen(LOAD_CMD_PREFIX)) {
-		infoPrint("\nSenden der Nachricht über Pipe fehlgeschlagen: ");
-		CloseSock();
+
+	// schreibe geladene Katalog auf Pipe
+	if(write(stdinPipe[1], LOAD_CMD_PREFIX, strlen(LOAD_CMD_PREFIX))
+			< strlen(LOAD_CMD_PREFIX)){
+		errorPrint("Senden der Nachricht über Pipe fehlgeschlagen");
+		endServer();
 		exit(0);
 	}
-	if (write(stdinPipe[1], name, strlen(name)) < strlen(name)) {
-		infoPrint("Senden der Nachricht über Pipe fehlgeschlagen: ");
-		CloseSock();
+	// ?
+	if(write(stdinPipe[1], name, strlen(name)) < strlen(name)){
+		errorPrint("Senden der Nachricht über Pipe fehlgeschlagen");
+		endServer();
 		exit(0);
 	}
 
-	// Enter
+	// Zeilenumbruch zum Abschluss
 	if (write(stdinPipe[1], "\n", 1) < 1) {
-		infoPrint("Senden der Nachricht über Pipe fehlgeschlagen: ");
-		CloseSock();
+		errorPrint("Senden der Nachricht über Pipe fehlgeschlagen");
+		endServer();
 		exit(0);
 	}
+
+	// von Pipe lesen wieviel Kataloge geladen wurden (LOAD_SUCCESS_PREFIX - Katalog mit SIZE Fragen geladen)
 	message = readLine(stdoutPipe[0]);
-	if (strcmp(message, LOAD_SUCCESS_PREFIX) != -1) {
-		infoPrint("SUCCESS");
+	if(strcmp(message, LOAD_SUCCESS_PREFIX) != -1) {
+		infoPrint("Kataloge eingelesen");
+		// The memmove() function copies n bytes from memory area src to memory area dest
 		memmove(message, message + sizeof(LOAD_SUCCESS_PREFIX) - 1, 50);
 		loaded = atoi(message);
-		infoPrint("Loaded: %i", loaded);
-	} else {
-		infoPrint("ERROR");
-		infoPrint(message);
-		CloseSock();
+		infoPrint("Anzahl an eingelesenen Katalogen: %i", loaded);
+	}
+	else {
+		errorPrint("Konnte nicht von Pipe lesen");
+		errorPrint(message);
+		endServer();
 		exit(0);
 	}
 
+	// shm_open() creates and opens a new, or opens an existing, POSIX shared memory object.
 	shmHandle = shm_open(SHMEM_NAME, O_RDONLY, 0);
-	if (shmHandle == -1) {
-		infoPrint("Konnte Shared Memory nicht öffnen!");
-		CloseSock();
+	if(shmHandle == -1){
+		errorPrint("Konnte Shared Memory nicht öffnen!");
+		endServer();
 		exit(0);
 	}
+
+	// Groesse ShareMemory = Anzahl Kataloge * Groesse der Fragen
 	shmLen = loaded * sizeof(Question);
+
+	// mmap() creates a new mapping in the virtual address space of the calling process.
+	// void *mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset);
 	shmData = mmap(NULL, shmLen, PROT_READ, MAP_SHARED, shmHandle, 0);
 
+	// Name SharedMemory
 	setShMem(shmData);
 
 	return;
-
 }
-*/
+

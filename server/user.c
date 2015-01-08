@@ -13,6 +13,7 @@
 #include "common/networking.h"
 #include "login.h"
 #include "catalog.h"
+#include "main.h"
 
 #include <stdbool.h>
 #include <stdlib.h>
@@ -224,6 +225,55 @@ PLAYER getUser(int client_id){
 			return spieler[i];
 		}
 	}
+}
+
+
+// pruefe ob Spieler alle Fragen beantwortet
+int isGameOver(){
+	for(int i=0;i<countUser();i++){
+		// haben alle Spieler ihre Fragen beantwortet
+		if(spieler[i].GameOver == 0){
+			return 0;
+		}
+	}
+	return 1;
+}
+
+
+//
+void sendGameOver(int id){
+	int i = 0;
+	while(spieler[i].id != id){
+		i++;
+	}
+	if(isGameOver() == 1){
+		// sende an Spieler EndPlatzierung
+		for(int j=0;j<countUser();j++){
+			PACKET packet;
+			packet.header.type = RFC_GAMEOVER;
+			packet.header.length = htons(1);
+			packet.content.playerrank = j + 1;
+			sendPacket(packet, spieler[j].sockDesc);
+		}
+		// Server + Thread beenden
+		endServer();
+		exit(0);
+		return;
+	}
+	return;
+}
+
+
+/*
+ * Funktion aktualisiert den Punktestand eines Spielers
+ */
+void setUserScore(int player_id, int score){
+	for(int i=0;i< countUser();i++){
+		if(spieler[i].id == player_id){
+			spieler[i].score += score;
+		}
+	}
+	return;
 }
 
 

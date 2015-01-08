@@ -14,7 +14,6 @@
 #include "catalog.h"
 #include "user.h"
 
-
 #include <stdbool.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -39,14 +38,13 @@ PACKET activeCatalog;
 char* shmem;
 
 
-
 /*
  * Funktion die einen Katalog zur Verwaltung hinzufuegt
  *
  * param char* name Name des Katalogs
  * param int i Zaehler / Katalognummer
  */
-int addCatalog(char* name, int i) {
+int addCatalog(char* name, int i){
 	// pruefe ob Katalognamen 'gueltig'
 	debugPrint("pruefe Katalognamen\n.");
 	if((name == NULL) || (strlen(name) == 0 || name == "\n")){
@@ -69,7 +67,7 @@ int addCatalog(char* name, int i) {
  *
  * int client_socket Socketdeskriptor des Clients
  */
-int sendCatalog(int client_socket) {
+int sendCatalog(int client_socket){
 	PACKET send_catalog_packet;
 	send_catalog_packet.header.type = RFC_CATALOGRESPONSE;
 	// gehe alle verfuegbaren Kataloge durch
@@ -95,7 +93,7 @@ int sendCatalog(int client_socket) {
 
 /*
  *
- * PACKET packet
+ * PACKET packet enthaelt den aktuell gewaehlten Fragenkatalog
  */
 int setActiveCatalog(PACKET packet){
 	activeCatalog = packet;
@@ -106,29 +104,37 @@ int setActiveCatalog(PACKET packet){
 
 
 
-// Sende Paket mit aktiven Katalog
+/*
+ * Funktion gibt den aktuellen Katalog zurueck
+ */
 PACKET getActiveCatalog(){
 	return activeCatalog;
 }
 
 
-
-// gebe zurueck ob ein Katalog ausgewaehlt wurde
+/*
+ * Funktion gibt zurueck ob ein Katalog ausgewaehlt wurde
+ */
 bool isCatalogChosen(){
-	return isCatalogChosen;
+	return is_catalog_chosen;
 }
 
 
-// setzte Shared-Memory Name
-void setShMem(char* sh) {
+/*
+ * Funktion setzt den Shared-Memory Name
+ */
+void setShMem(char* sh){
 	shmem = sh;
 	return;
 }
 
+
 // TODO
-Question* getQuestion(int pos) {
+/*
+ * Funktion
+ */
+Question* getQuestion(int pos){
 	Question* QPtr = shmem + pos*(sizeof(Question));
 	return QPtr;
-
 }
 

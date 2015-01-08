@@ -43,6 +43,7 @@
 #define ERR_SERVER_SPIELLEITERLEFTGAME 104
 #define ERR_SERVER_TOOFEWPLAERS 105
 #define ERR_SERVER_COULDNOTSTARTGAME 106
+#define ERR_SERVER_USERQUESTIONERROR 107
 
 #define ERR_CLIENT_CLIENTLEFTGAME 201
 
@@ -74,7 +75,7 @@ typedef struct {
 
 // Antwortauswahl + richtige Antwort
 typedef struct {
-	uint8_t selection;
+	uint8_t timeout;
  	uint8_t correct;
 } QUESTIONRESULT;
 
@@ -87,7 +88,7 @@ typedef union {
 	PLAYERLIST playerlist[MAX_PLAYERS];		// LST - Playerlist
 	QuestionMessage question;				// QRQ - Question
 	uint8_t selection;						// QAN - QuestionAnswered
-	QUESTIONRESULT antwort;					// QRE - QuestionResult
+	QUESTIONRESULT questionresult;					// QRE - QuestionResult
 	uint8_t playerrank;						// GOV - GameOver
 	ERROR error;							// ERR - Error
 } CONTENT;
@@ -98,7 +99,6 @@ typedef struct {
 	uint8_t type;
 	uint16_t length;
 } HEADER;
-// HEADER head;
 
 
 // Paket - Header + Nachricht

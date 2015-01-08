@@ -436,3 +436,70 @@ char *readLine(int fd		/**< Der Dateideskriptor, von dem gelesen werden soll */
 
 	return NULL;	/* wird nie erreicht */
 }
+
+
+/* Funktionen um zwei Zeitwerte zu addieren - aus dem Systemprogrammierung-Moodlekurs
+ * https://www.elearning.hs-weingarten.de/mod/lesson/view.php?id=23738&pageid=6525
+ */
+struct timespec timespecAdd(
+		const struct timespec *a, /**< Der erste Summand */
+		const struct timespec *b /**< Der zweite Summand */
+){
+        struct timespec result;
+
+        result.tv_nsec = a->tv_nsec + b->tv_nsec;
+        result.tv_sec = a->tv_sec + b->tv_sec + (time_t) (result.tv_nsec / 1000000000L); /* 3. Summand ist Übertrag aus Nanosekunden */
+        result.tv_nsec %= 1000000000L; /* Übertrag wurde in die Sekunden verschoben, der Rest steht hier */
+
+        return result;
+}
+
+
+/* Funktionen um zwei Zeitwerte zu subtrahieren - aus dem Systemprogrammierung-Moodlekurs
+ * https://www.elearning.hs-weingarten.de/mod/lesson/view.php?id=23738&pageid=6525
+ */
+struct timespec timespecSub(
+		const struct timespec *a, /**< Der Minuend */
+		const struct timespec *b /**< Der Subtrahend */
+){
+        struct timespec result;
+
+        result.tv_nsec = a->tv_nsec - b->tv_nsec;
+        result.tv_sec = a->tv_sec - b->tv_sec;
+
+        if (result.tv_nsec < 0L) /* Übertrag behandeln, tv_nsec ist glücklicherweise signed */
+        {
+                result.tv_nsec += 1000000000L;
+                --result.tv_sec;
+        }
+
+        return result;
+}
+
+/*
+ * Funktion um zwei timespec Strukturen miteinander zu vergleichen
+ */
+int cmpTimespec(const struct timespec *a, const struct timespec *b) {
+        int time_a = 0;
+        int time_b = 0;
+
+        time_a = a->tv_nsec / 1000000;
+        time_a = time_a + (a->tv_sec * 1000);
+
+        time_b = b->tv_nsec / 1000000;
+        time_b = time_b + (b->tv_sec * 1000);
+
+        if (time_a == time_b) {
+                return 0;
+        }
+
+        if (time_a < time_b) {
+                return -1;
+        }
+
+        if (time_a > time_b) {
+                return 1;
+        }
+
+        return -2;
+}

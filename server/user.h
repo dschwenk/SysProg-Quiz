@@ -13,7 +13,8 @@
 #include <stdint.h>
 #include "common/rfc.h"
 
-// Struct fuer Spielerverwaltung - Name, ID, Socket, Score
+
+// Struct fuer Spielerverwaltung - Name, ID, Socket, Score, Flag fuer Spielende
 typedef struct player {
 	int id;
 	char name[PLAYER_NAME_LENGTH];
@@ -23,9 +24,6 @@ typedef struct player {
 } PLAYER;
 
 
-int create_user_mutex();
-void lock_user_mutex();
-void unlock_user_mutex();
 void initSpielerverwaltung();
 int addPlayer(char*,int,int);
 int removePlayer(int);
@@ -35,5 +33,14 @@ int countUser();
 void sendCatalogChange();
 void setPlayerRanking();
 PLAYER getUser(int);
+void setUserScore(int,int);
+int isGameOver();
+void sendGameOver(int);
+int create_user_mutex();
+void lock_user_mutex();
+void unlock_user_mutex();
+
+
+
 
 #endif
