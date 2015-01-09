@@ -22,6 +22,7 @@ typedef struct {
 
 void receivePlayerlist(PACKET);
 void receiveErrorMessage(PACKET);
+void game_onAnswerClicked(int, int);
 void *listener_main();
 
 #endif

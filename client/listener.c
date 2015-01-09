@@ -13,13 +13,15 @@
 #include "common/sockets.h"
 #include "common/networking.h"
 #include "main.h"
+#include "fragewechsel.h"
+#include "../common/rfc.h"
 
 #include <netinet/in.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <semaphore.h>
 
 
 void receivePlayerlist(PACKET packet){
@@ -87,6 +89,15 @@ void receiveErrorMessage (PACKET packet){
 }
 
 
+void questionRequest(int socketDeskriptor){
+	PACKET packet;
+	packet.header.type = RFC_QUESTIONREQUEST;
+	packet.header.length = 0;
+	sendPacket(packet, socketDeskriptor);
+	printf("Question Request gesendet!\n");
+}
+
+
 void *listener_main(int * sockD){
 
     // warte auf Antwort des Servers
@@ -147,18 +158,81 @@ void *listener_main(int * sockD){
 				break;
 			// RFC_STARTGAME
 			case RFC_STARTGAME:
+				infoPrint("Spiel gestartet!");
+
+				questionRequest(*sockD);
+
 				// Vorbereitungsfenster ausblenden und Spielfenster anzeigen
 				game_showWindow();
 				preparation_hideWindow();
 				break;
 
 			case RFC_QUESTION:
-				break;
-			case RFC_QUESTIONANSWERED:
+				infoPrint("Frage erhalten");
+
+				char msg[50];
+				if (packet.header.length != 0) {
+					game_clearAnswerMarksAndHighlights();
+					game_setQuestion(packet.content.question.question);
+					for (int i = 0; i <= 3; i++) {
+						game_setAnswer(i, packet.content.question.answers[i]);
+					}
+					game_setControlsEnabled(1);
+					sprintf(msg, "Sie haben %i Sekunden Zeit\n",
+							packet.content.question.timeout);
+					game_setStatusIcon(0);
+					// game_setStatusText(msg);
+				} else if (ntohs(packet.header.length) == 0) {
+					sprintf(msg, "Alle Fragen beantwortet, bitte Warten.\n");
+					game_setStatusText(msg);
+					game_setStatusIcon(0);
+				}
+
+				game_setStatusText(msg);
 				break;
 			case RFC_QUESTIONRESULT:
+				infoPrint("Frageauswertung erhalten!");
+
+				game_setControlsEnabled(0);
+
+				if (ntohs(packet.header.length) > 0) {
+					printf("KORREKT = %i\n", packet.content.questionresult.correct);
+					printf("SELECT = %i\n", packet.content.questionresult.timeout);
+
+					/*if (packet.content.questionresult.correct > 3) {
+						packet.content.questionresult.correct = 3;
+						printf("Falsche Korrektur empfangen!");
+						//break;
+					}*/
+
+					for (int i = 0; i < NUM_ANSWERS; i++) {
+						if (packet.content.questionresult.correct & (1 << i)) {
+							game_markAnswerCorrect(i);
+						} else {
+							game_markAnswerWrong(i);
+						}
+					}
+
+					if (packet.content.questionresult.timeout != 0) {
+						game_setStatusText("Zeit vorbei");
+						game_setStatusIcon(3);
+					} else if (selection != packet.content.questionresult.correct) {
+						game_setStatusText("Falsch");
+						game_setStatusIcon(2);
+					} else {
+						game_setStatusText("Richtige Antwort!");
+						game_setStatusIcon(1);
+					}
+					sem_post(&frage); //fragesemaphor aufrufen
+				}
+
 				break;
 			case RFC_GAMEOVER:
+				sprintf(msg, "Glückwunsch, Sie wurden %i.\n", packet.content.playerrank);
+				guiShowMessageDialog(msg, 1); //1=gui main geht nach Bestätigen zum Aufrufer zurück
+
+				pthread_exit(0);
+				return NULL;
 				break;
 			// RFC_ERRORWARNING
 			case RFC_ERRORWARNING:

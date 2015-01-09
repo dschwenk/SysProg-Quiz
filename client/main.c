@@ -13,6 +13,7 @@
 #include "common/networking.h"
 #include "common/rfc.h"
 #include "listener.h"
+#include "fragewechsel.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -40,7 +41,8 @@ char *name = "unknown";
 char *server = "localhost";
 // Standardserverport
 char *port = "8111";
-
+// Ausgewählte Antwort
+int selection = 0;
 
 int establishConnection(int socketD_, char* port_, char* hostname_) {
 	int portno;
@@ -196,6 +198,11 @@ int main(int argc, char **argv){
 		pthread_t Listener_thread;
 		pthread_create(&Listener_thread, NULL, (void *) &listener_main,&socketDeskriptor);
 
+		//Fragewechsel-Thread erzeugen
+		sem_init(&frage, 0, 0);
+		pthread_t Fragewechsel_thread;
+		pthread_create(&Fragewechsel_thread, NULL, (void *) &fragewechsel_main,	&socketDeskriptor);
+
 		//GUI Anzeigen
 		preparation_showWindow();
 		guiMain();
@@ -246,14 +253,17 @@ void preparation_onWindowClosed(void) {
 }
 
 
-void game_onAnswerClicked(int index) {
-	debugPrint("Antwort %i ausgewählt", index);
-}
-
-
 void game_onSubmitClicked(unsigned char selectedAnswers)
 {
-	debugPrint("Absende-Button angeklickt, Bitmaske der Antworten: %u",	(unsigned)selectedAnswers);
+	infoPrint("Absende-Button angeklickt, Bitmaske der Antworten: %u",	(unsigned)selectedAnswers);
+
+	selection = selectedAnswers;
+	PACKET packet;
+
+	packet.header.type = RFC_QUESTIONANSWERED;
+	packet.header.length = htons(sizeof(uint8_t));
+	packet.content.selection = (uint8_t) index;
+	sendPacket(packet, socketDeskriptor);
 }
 
 

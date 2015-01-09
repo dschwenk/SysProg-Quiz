@@ -11,15 +11,10 @@
 #define FRAGEWECHSEL_H
 
 #include "../common/rfc.h"
+#include <semaphore.h>
 
-/* ... */
-typedef struct {
-	int id;
-	char name[32];
-}USER;
-USER userlist[4];
+sem_t frage;
 
-void ErrorMessageEmpfangen(PACKET packet);
-void *listener_main();
+void *fragewechsel_main(int*);
 
 #endif
