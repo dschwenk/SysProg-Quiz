@@ -24,24 +24,24 @@
 
 void receivePlayerlist(PACKET packet){
 
-	USER userlist[4];
+	USER userlist[MAX_PLAYERS];
 	int spielerzahl=0;
 
 	// printf("Test: %i\n",packet.header.length);
-	spielerzahl = ntohs(packet.header.length)/37;
+	spielerzahl = ntohs(packet.header.length)/37; // 37 == Groesse PLAYERLIST 1 Spieler
 	printf("Anzahl Spieler in der Playerlist: %i\n",spielerzahl);
 	// Playerlist leeren
 	preparation_clearPlayers();
-	for (int i =0; i< spielerzahl;i++){
+	for(int i=0;i< spielerzahl;i++){
 		// kopiere Spieler ID in Spielerliste
 		userlist[i].id=packet.content.playerlist[i].id;
 		// mehr als 4 Spieler?
-		if(i > 4){
+		if(i > MAX_PLAYERS){
 			printf("Maximale Anzahl an Spieler erreicht!\n");
 			exit(1);
 		}
 		// kopiere Name aus Paket in Spielerliste
-		strncpy(userlist[i].name, packet.content.playerlist[i].playername,32);
+		strncpy(userlist[i].name, packet.content.playerlist[i].playername,PLAYER_NAME_LENGTH);
 		// Ausgabe der angemeldeten Spieler
 		printf("%s ist angemeldet\n", userlist[i].name);
 		preparation_addPlayer(userlist[packet.content.playerlist[i].id].name);
@@ -70,7 +70,7 @@ void receiveCatalogChange(PACKET packet){
 
 
 void receiveErrorMessage (PACKET packet){
-	char error_message[100];
+	char error_message[MAX_MESSAGE_LENGTH];
 	// hole Errornachricht
 	strncpy (error_message, packet.content.error.errormessage, ntohs (packet.header.length)-1);
 	// Nullterminierung
@@ -130,7 +130,7 @@ void *listener_main(int * sockD){
 
     // Empfangsschleife
 	int stop = 0;
-	while(stop==0){
+	while(stop == 0){
 		PACKET packet = recvPacket(*sockD);
 		switch (packet.header.type){
             // RFC_CATALOGRESPONSE
@@ -141,23 +141,32 @@ void *listener_main(int * sockD){
             case RFC_CATALOGCHANGE:
                 receiveCatalogChange(packet);
                 break;
-	    // RFC_PLAYERLIST
-	    case RFC_PLAYERLIST:
-		    receivePlayerlist(packet);
-		    break;
-	    // RFC_STARTGAME
-	    case RFC_STARTGAME:
-		    // Vorbereitungsfenster ausblenden und Spielfenster anzeigen
-		    game_showWindow();
-		    preparation_hideWindow();
-		    break;
-	    // RFC_ERRORWARNING
-	    case RFC_ERRORWARNING:
-		    receiveErrorMessage(packet);
-		    break;
-	    default:
-		    break;
-		}
+			// RFC_PLAYERLIST
+			case RFC_PLAYERLIST:
+				receivePlayerlist(packet);
+				break;
+			// RFC_STARTGAME
+			case RFC_STARTGAME:
+				// Vorbereitungsfenster ausblenden und Spielfenster anzeigen
+				game_showWindow();
+				preparation_hideWindow();
+				break;
+
+			case RFC_QUESTION:
+				break;
+			case RFC_QUESTIONANSWERED:
+				break;
+			case RFC_QUESTIONRESULT:
+				break;
+			case RFC_GAMEOVER:
+				break;
+			// RFC_ERRORWARNING
+			case RFC_ERRORWARNING:
+				receiveErrorMessage(packet);
+				break;
+			default:
+				break;
+			}
 	}
 	return 0;
 }

@@ -52,7 +52,8 @@
 #define PLAYER_NAME_LENGTH 32
 // max. Laenge Katalogname (inkl. '\0')
 #define CATALOG_NAME_LENGTH 31
-
+// define max. Messagelength
+#define MAX_MESSAGE_LENGTH 100
 
 //Packen der Struckts auf minimale Größe - keine Fuellbytes
 #pragma pack(push,1)
@@ -69,7 +70,7 @@ typedef struct {
 // Errortype + Errormessage
 typedef struct {
 	 uint8_t errortype;
-	 char errormessage [100];
+	 char errormessage [MAX_MESSAGE_LENGTH];
 } ERROR;
 
 
