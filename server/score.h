@@ -16,6 +16,7 @@
 
 
 sem_t semaphor_score;
+
 void* score_main();
 
 #endif

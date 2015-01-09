@@ -22,6 +22,6 @@
 #define LOAD_ERROR_OOM		"OUT OF MEMORY"			/**< Zu wenig freier Speicher */
 
 /* Name des Shared Memory */
-#define SHMEM_NAME		"/quiz_a1"	/**< Name des POSIX.4 Shared Memory */
+#define SHMEM_NAME		"/shmem_quiz_gruppe2"	/**< Name des POSIX.4 Shared Memory */
 
 #endif

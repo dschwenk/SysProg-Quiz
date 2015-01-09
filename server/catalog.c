@@ -21,7 +21,6 @@
 #include <string.h>
 
 
-
 // Array fuer die Katalogverwaltung
 CATALOGARRAY catalog_array[20];
 
@@ -34,7 +33,7 @@ bool is_catalog_chosen = false;
 // Paket enthaelt Namen des aktiven / aktuellen Katalogs
 PACKET activeCatalog;
 
-// String Shared-Memory
+// String Shared-Memory 'MappingName'
 char* shmem;
 
 
@@ -61,7 +60,6 @@ int addCatalog(char* name, int i){
 }
 
 
-
 /*
  * Funktion um verfuegbare Kataloge an Client zu senden
  *
@@ -71,7 +69,7 @@ int sendCatalog(int client_socket){
 	PACKET send_catalog_packet;
 	send_catalog_packet.header.type = RFC_CATALOGRESPONSE;
 	// gehe alle verfuegbaren Kataloge durch
-	for(int i = 0; i <= catalog_count; i++){
+	for(int i=0;i<= catalog_count;i++){
 		// konvertiere Werte von host byte order zu network byte order
 		send_catalog_packet.header.length = htons(strlen(catalog_array[i].CatalogName));
 		// kopiere Katalogname in Paket
@@ -90,9 +88,8 @@ int sendCatalog(int client_socket){
 }
 
 
-
 /*
- *
+ * Funktion setzt den aktiven / gewaehlten Katalog
  * PACKET packet enthaelt den aktuell gewaehlten Fragenkatalog
  */
 int setActiveCatalog(PACKET packet){
@@ -101,7 +98,6 @@ int setActiveCatalog(PACKET packet){
 	is_catalog_chosen = true;
 	return 0;
 }
-
 
 
 /*
@@ -121,7 +117,7 @@ bool isCatalogChosen(){
 
 
 /*
- * Funktion setzt den Shared-Memory Name
+ * Funktion setzt den Shared-Memory 'MappingName'
  */
 void setShMem(char* sh){
 	shmem = sh;
@@ -129,12 +125,11 @@ void setShMem(char* sh){
 }
 
 
-// TODO
 /*
- * Funktion
+ * Funktion liesst von SharedMemory Fragen
  */
 Question* getQuestion(int pos){
-	Question* QPtr = shmem + pos*(sizeof(Question));
-	return QPtr;
+	Question* question = shmem + pos*(sizeof(Question));
+	return question;
 }
 

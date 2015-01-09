@@ -54,7 +54,7 @@
 #define CATALOG_NAME_LENGTH 31
 
 
-//Packen der Struckts auf minimale Größe
+//Packen der Struckts auf minimale Größe - keine Fuellbytes
 #pragma pack(push,1)
 
 

@@ -36,7 +36,6 @@ bool game_running = false;
  *
  * param Serversocket
  */
-
 void* login_main(int sock){
 	PACKET packet;
 	packet.header.type = 0;
@@ -44,14 +43,14 @@ void* login_main(int sock){
 	int client_socket;
 	int client_id;
 
+	// Threadverwaltung - je Client ein Thread - Thread verwaltet Spielphase
+	pthread_t client_threads[MAX_PLAYERS];
+
 	// Initialisiere Userdaten-Mutex
 	if(create_user_mutex() == -1){
 		// sollte initialisieren nicht erfolgreich sein terminiere Thread
 		pthread_exit(NULL);
 	}
-
-	// Threadverwaltung - je Client ein Thread - Thread verwaltet Spielphase
-	pthread_t client_threads[MAX_PLAYERS];
 
 	// Empfaenger-Schleife
 	while(1){

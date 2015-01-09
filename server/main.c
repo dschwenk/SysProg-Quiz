@@ -50,7 +50,7 @@ pid_t forkResult;
 int shmLen = 20;
 // Handle fuer Shared Memory
 int shmHandle;
-//
+// Shared Memory Mapping
 char* shmData;
 // Pipes zum Austausch zwischen Server und Loader
 int stdoutPipe[2];
@@ -230,9 +230,9 @@ void endServer(){
 	// shared memorey
 	// aus Adressraum entfernen
 	munmap(shmData, shmLen);
-	// Objekt schliessen
+	// Filedeskritpor SharedMemory schliessen
 	close(shmHandle);
-	// Objekt entfernen
+	// SharedMemory Objekt entfernen
 	shm_unlink(SHMEM_NAME);
 	debugPrint("Shared Memory entfernt.");
 
@@ -318,13 +318,13 @@ int main(int argc, char ** argv) {
 	// Loader starten + Kataloge laden
 	int loader_start_result = startLoader();
 	if(loader_start_result != 0){
-		infoPrint("Fehler beim Starten des Loaders: %i", loader_start_result);
+		errorPrint("Fehler beim Starten des Loaders: %i", loader_start_result);
 		endServer();
 		exit(0);
 	}
 	int loader_load_catalogs_result = loadCatalogs();
 	if(loader_load_catalogs_result != 0){
-		infoPrint("Fehler beim Laden der Kataloge: %i", loader_load_catalogs_result);
+		errorPrint("Fehler beim Laden der Kataloge: %i", loader_load_catalogs_result);
 		endServer();
 		exit(0);
 	}
@@ -468,27 +468,25 @@ int loadCatalogs(){
  *
  *
  */
-void LoaderQuestions(char* name){
+void loadQuestions(char* name){
 	char* message;
 	int loaded;
 
 	// remove shared memorey
 	shm_unlink(SHMEM_NAME);
 
-	// schreibe geladene Katalog auf Pipe
-	if(write(stdinPipe[1], LOAD_CMD_PREFIX, strlen(LOAD_CMD_PREFIX))
-			< strlen(LOAD_CMD_PREFIX)){
+	// LOAD_CMD_PREFIX - Katalog laden
+	if(write(stdinPipe[1], LOAD_CMD_PREFIX, strlen(LOAD_CMD_PREFIX)) < strlen(LOAD_CMD_PREFIX)){
 		errorPrint("Senden der Nachricht über Pipe fehlgeschlagen");
 		endServer();
 		exit(0);
 	}
-	// ?
+	// aktiven Katalog uebergeben
 	if(write(stdinPipe[1], name, strlen(name)) < strlen(name)){
 		errorPrint("Senden der Nachricht über Pipe fehlgeschlagen");
 		endServer();
 		exit(0);
 	}
-
 	// Zeilenumbruch zum Abschluss
 	if (write(stdinPipe[1], "\n", 1) < 1) {
 		errorPrint("Senden der Nachricht über Pipe fehlgeschlagen");
@@ -496,9 +494,9 @@ void LoaderQuestions(char* name){
 		exit(0);
 	}
 
-	// von Pipe lesen wieviel Kataloge geladen wurden (LOAD_SUCCESS_PREFIX - Katalog mit SIZE Fragen geladen)
+	// von Pipe lesen ob laden des Katalogs erfolgreich (LOAD_SUCCESS_PREFIX - Katalog mit SIZE Fragen geladen)
 	message = readLine(stdoutPipe[0]);
-	if(strcmp(message, LOAD_SUCCESS_PREFIX) != -1) {
+	if(strcmp(message, LOAD_SUCCESS_PREFIX) != -1){
 		infoPrint("Kataloge eingelesen");
 		// The memmove() function copies n bytes from memory area src to memory area dest
 		memmove(message, message + sizeof(LOAD_SUCCESS_PREFIX) - 1, 50);
@@ -513,21 +511,34 @@ void LoaderQuestions(char* name){
 	}
 
 	// shm_open() creates and opens a new, or opens an existing, POSIX shared memory object.
+	// returns file descriptor of -1 in case of error
 	shmHandle = shm_open(SHMEM_NAME, O_RDONLY, 0);
 	if(shmHandle == -1){
-		errorPrint("Konnte Shared Memory nicht öffnen!");
+		errorPrint("Konnte Shared Memory nicht erstellen / öffnen!");
 		endServer();
 		exit(0);
 	}
 
-	// Groesse ShareMemory = Anzahl Kataloge * Groesse der Fragen
+	// Groesse ShareMemory = Anzahl Fragen * Groesse der Fragen
 	shmLen = loaded * sizeof(Question);
+	ftruncate(shmHandle, shmLen);
 
+	/*
+	 * Um ein mittels shm_open geöffnetes Shared Memory Objekt nun tatsächlich verwenden zu können, muss
+	 * dieses in den Adressraum des Prozesses eingebunden werden.
+	 * Die Funktion mmap bindet eine Datei, ein Gerät oder ein Shared Memory Objekt in den Adressraum
+	 * des aufrufenden Prozesses ein.
+	 */
 	// mmap() creates a new mapping in the virtual address space of the calling process.
 	// void *mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset);
 	shmData = mmap(NULL, shmLen, PROT_READ, MAP_SHARED, shmHandle, 0);
+	if(shmData == MAP_FAILED){
+		errorPrint("Konnte Shared Memory nicht in Adressraum einbinden!");
+		endServer();
+		exit(0);
+	}
 
-	// Name SharedMemory
+	//  SharedMemory
 	setShMem(shmData);
 
 	return;

@@ -20,6 +20,6 @@ void INThandler(int);
 
 int startLoader();
 int loadCatalogs();
-void LoaderQuestions(char*);
+void loadQuestions(char*);
 
 #endif /* MAIN_H_ */

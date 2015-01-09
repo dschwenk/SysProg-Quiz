@@ -30,7 +30,7 @@ void *client_thread_main(int* client_id){
 
 	// Variablen fuer Spielablauf
 	Question* shmQ;
-	int QNumber; // Fragenummer
+	int question_number; // Fragenummer
 	int correct; // Bitmaske für richtige Antworten
 	int time_left = 0; // Zeit fuer Beantwortung der Frage
 	uint8_t selection = 5; // vom Spieler gewaehlte Antowrt
@@ -162,8 +162,8 @@ void *client_thread_main(int* client_id){
 						catalog[ntohs(packet.header.length)] = '\0';
 
 						// lade Fragen des aktiven Katalogs
-						LoaderQuestions(catalog);
-						QNumber = 0;
+						loadQuestions(catalog);
+						question_number = 0;
 
 						// sende Paket mit aktuellem Katalog an alle Spieler
 						sendToAll(packet);
@@ -172,10 +172,9 @@ void *client_thread_main(int* client_id){
 
 				// Spieler fordert Frage an
 				case RFC_QUESTIONREQUEST:
-					// ....
 
-					shmQ = getQuestion(QNumber);
-					QNumber++;
+					shmQ = getQuestion(question_number);
+					question_number++;
 					PACKET question_packet;
 					// gibt es noch eine Frage
 					if(strcmp(shmQ->question, "") != 0){
@@ -311,11 +310,13 @@ int questionTimer(uint8_t* selection, int timeout, int sockD){
 
 		clock_gettime(CLOCK_MONOTONIC, &timeStart);
 
+		// vergleiche Start & Endzeit - pruefe ob Zeit abgelaufen
 		if(cmpTimespec(&timeStart, &timeEnd) != -1){
 			infoPrint("Zeit abgelaufen!");
 			return -1;
 		}
 		else {
+			// subtrahiere Zeitwerte
 			timeRest = timespecSub(&timeEnd, &timeStart);
 		}
 	}

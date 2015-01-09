@@ -29,9 +29,10 @@ PLAYER spieler[MAX_PLAYERS];
 pthread_mutex_t user_mutex;
 
 
-
-
-// Initialisiere Spielerarray
+/*
+ * Funktion initialisert die Spielerverwaltung
+ * (Alle Spieler werden mit default-Werten initialisiert
+ */
 void initSpielerverwaltung(){
 	debugPrint("Initialisiere Spielervewaltung.");
 	// initialisiere Spieler mit Standardwerten
@@ -84,7 +85,6 @@ int addPlayer(char *name, int length, int sock){
 }
 
 
-
 /*
  * Entfernt Spieler aus der UserListe
  *
@@ -121,7 +121,6 @@ int removePlayer(int client_id){
 }
 
 
-
 /*
  * Sende Nachricht an alle Clients
  *
@@ -139,8 +138,10 @@ void sendToAll(PACKET packet) {
 }
 
 
-
-// sende PlayerList an alle Spieler
+/*
+ * Funktion sendet die aktuelle Spielerliste mit
+ * Punktzahl an alle Spieler
+ */
 void sendPlayerList(){
 	debugPrint("Spielerliste senden.");
 
@@ -148,30 +149,33 @@ void sendPlayerList(){
 	packet.header.type = RFC_PLAYERLIST;
 
 	int user_count = countUser();
+	// aktualisiere Spielstand / Rangfolge
+	setPlayerRanking();
 
 	for(int i = 0; i < user_count; i++){
 		// fuege Spieler zur Liste hinzu
 		PLAYERLIST playerlist;
 		playerlist.id = spieler[i].id;
 		strncpy(playerlist.playername, spieler[i].name, PLAYER_NAME_LENGTH);
-		playerlist.score = 0;
+		playerlist.score = htonl(spieler[i].score);
 		packet.content.playerlist[i] = playerlist;
 	}
 
-	// Laenge der Message: Anzahl der Spieler * 37 (Groeße der PLAYERLIST)
+	// Laenge der Message: Anzahl der Spieler * Groeße der PLAYERLIST
 	packet.header.length = htons(sizeof(PLAYERLIST) * user_count);
 	// PlayerList an alle Clients senden
 	sendToAll(packet);
 }
 
 
-
-// zaehlt aktuelle Anzahl an Spielern
+/*
+ * Funktion zaehlt aktuell angemeldete Spieler
+ */
 int countUser(){
 	lock_user_mutex();
 	debugPrint("Zaehle aktuell angemeldete Spieler.");
 	int current_user_count = 0;
-	for(int i = 0; i < MAX_PLAYERS; i++){
+	for(int i=0;i< MAX_PLAYERS;i++){
 		// Spieler vorhanden - erhoehe Zaehler
 		if((spieler[i].id != -1) && (spieler[i].sockDesc != 0)){
 			current_user_count++;
@@ -183,8 +187,9 @@ int countUser(){
 }
 
 
-
-// sende aktuellen Katalog an alle Spieler
+/*
+ * Funktion sendet den aktuellen Katalog an alle Spieler
+ */
 void sendCatalogChange(){
 	debugPrint("Sende aktuellen Katalog an alle Spieler.");
 	PACKET packet;
@@ -196,14 +201,15 @@ void sendCatalogChange(){
 }
 
 
-
-// sortiere Spieler nach Punkten
+/*
+ * Funktion sortiert die Spieler nach ihrer Punktzahl
+ */
 void setPlayerRanking(){
 	int current_user_count = countUser();
 	debugPrint("Sortiere Spieler nach Punktzahl.");
 	// gehe Spieler durch
-	for(int i = current_user_count; i >= 0; i--){
-		for(int n = 0; n < (current_user_count - 1); n++){
+	for(int i=current_user_count;i>= 0;i--){
+		for(int n=0;n<(current_user_count - 1);n++){
 			// vergleiche Spielstaende - ist Spielstand des nachfolgender groesser - tausche Plaetze
 			if(spieler[n].score < spieler[n+1].score){
 				PLAYER temp = spieler[n];
@@ -228,7 +234,9 @@ PLAYER getUser(int client_id){
 }
 
 
-// pruefe ob Spieler alle Fragen beantwortet
+/*
+ * Pruefe ob alle Spieler alle Fragen beantwortet haben
+ */
 int isGameOver(){
 	for(int i=0;i<countUser();i++){
 		// haben alle Spieler ihre Fragen beantwortet
@@ -240,12 +248,15 @@ int isGameOver(){
 }
 
 
-//
+/*
+ *
+ */
 void sendGameOver(int id){
 	int i = 0;
 	while(spieler[i].id != id){
 		i++;
 	}
+	spieler[i].GameOver = 1;
 	if(isGameOver() == 1){
 		// sende an Spieler EndPlatzierung
 		for(int j=0;j<countUser();j++){
@@ -256,7 +267,7 @@ void sendGameOver(int id){
 			sendPacket(packet, spieler[j].sockDesc);
 		}
 		// Server + Thread beenden
-		endServer();
+		// endServer();
 		exit(0);
 		return;
 	}
@@ -277,8 +288,9 @@ void setUserScore(int player_id, int score){
 }
 
 
-
-// Mutex fuer die Benutzerdaten initalisieren
+/*
+ * Funktion initalisiert Mutex fuer die Benutzerdaten
+ */
 int create_user_mutex(){
 	// initialisiere Mutex, NULL -> Standardwerte
 	// http://www.lehman.cuny.edu/cgi-bin/man-cgi?pthread_mutex_init+3
@@ -291,8 +303,9 @@ int create_user_mutex(){
 }
 
 
-
-// Zugriff auf Benutzerdaten sperren
+/*
+ * Funktion sperrt Mutex fuer die Benutzerdaten
+ */
 void lock_user_mutex(){
 	debugPrint("lock Benutzerdatenmutex.");
 	// lock mutex
@@ -301,7 +314,9 @@ void lock_user_mutex(){
 }
 
 
-// Zugriff auf Benutzerdaten erlauben
+/*
+ * Funktion gibt Mutex fuer die Benutzerdaten frei
+ */
 void unlock_user_mutex(){
 	debugPrint("unlock Benutzerdatenmutex.");
 	// unlock mutex
