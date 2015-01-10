@@ -16,14 +16,15 @@
 // Spieler - ID + Name
 typedef struct {
 	int id;
-	char name[32];
+	char name[PLAYER_NAME_LENGTH];
 } USER;
 
 
 void receivePlayerlist(PACKET);
+void receiveCatalogList(PACKET);
+void receiveCatalogChange(PACKET);
 void receiveErrorMessage(PACKET);
-void game_onAnswerClicked(int, int);
-void *listener_main();
+void questionRequest(int);
+void *listener_main(int *);
 
 #endif
-

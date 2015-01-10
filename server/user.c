@@ -59,17 +59,14 @@ int addPlayer(char *name, int length, int sock){
 	debugPrint("Fuege Spieler zur Verwaltung hinzu.");
 	name[length] = 0;
 	int current_count_user = countUser();
-	//lock_user_mutex();
 	// sind noch freie Spielerplaetze vorhanden
 	if(current_count_user >= MAX_PLAYERS){
-		//unlock_user_mutex();
 		return MAX_PLAYERS;
 	}
 	else {
 		// pruefe auf gleichen Namen
 		for(int i = 0; i < current_count_user; i++){
 			if(strncmp(spieler[i].name, name, length + 1) == 0){
-				//unlock_user_mutex();
 				return -1;
 			}
 		}
@@ -79,7 +76,6 @@ int addPlayer(char *name, int length, int sock){
 		strncpy(spieler[new_id].name, name, length + 1);
 		spieler[new_id].sockDesc = sock;
 		// gebe Spieler-ID zurueck
-		//unlock_user_mutex();
 		return new_id;
 	}
 }
@@ -95,7 +91,6 @@ int removePlayer(int client_id){
 	debugPrint("Loesche Spieler - setzte Daten auf Standard zurueck!");
 	int i = 0;
 	int current_user_count = countUser();
-	//lock_user_mutex();
 	// suche Spieler im Array
 	while(spieler[i].id != client_id){
 		i++;
@@ -113,7 +108,6 @@ int removePlayer(int client_id){
 		spieler[i+1] = temp;
 		i++;
 	}
-	//unlock_user_mutex();
 	// aktualisiere Spielstand / Rangfolge
 	setPlayerRanking();
 	// sende PlayerList an alle Spieler
@@ -161,7 +155,6 @@ void sendPlayerList(){
 		playerlist.score = htonl(spieler[i].score);
 		packet.content.playerlist[i] = playerlist;
 	}
-
 	// Laenge der Message: Anzahl der Spieler * Groeße der PLAYERLIST
 	packet.header.length = htons(sizeof(PLAYERLIST) * user_count);
 	// PlayerList an alle Clients senden
@@ -173,7 +166,6 @@ void sendPlayerList(){
  * Funktion zaehlt aktuell angemeldete Spieler
  */
 int countUser(){
-	//lock_user_mutex();
 	debugPrint("Zaehle aktuell angemeldete Spieler.");
 	int current_user_count = 0;
 	for(int i=0;i< MAX_PLAYERS;i++){
@@ -182,7 +174,6 @@ int countUser(){
 			current_user_count++;
 		}
 	}
-	//unlock_user_mutex();
 	// gebe Anzahl an Spielern zurueck
 	return current_user_count;
 }
@@ -268,7 +259,7 @@ void sendGameOver(int id){
 			sendPacket(packet, spieler[j].sockDesc);
 		}
 		// Server + Thread beenden
-		// endServer();
+		endServer();
 		exit(0);
 		return;
 	}

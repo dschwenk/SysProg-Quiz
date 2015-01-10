@@ -83,7 +83,9 @@ void *client_thread_main(int* client_id){
 						response.content.error.errortype = ERR_SERVER_SPIELLEITERLEFTGAME;
 						strncpy(response.content.error.errormessage,"Der Spieleiter hat das Spiel verlassen, der Server wird beendet!",	ntohs(response.header.length));
 						// sende Fehlermeldung an alle
+						lock_user_mutex();
 						sendToAll(response);
+						unlock_user_mutex();
 						// Server beenden
 						endServer();
 					}
@@ -91,7 +93,9 @@ void *client_thread_main(int* client_id){
 					else {
 						debugPrint("Spieler %s (ID: %d) war NICHT Spielleiter", spieler.name, spieler.id);
 						// entferne Spieler aus verwaltung
+						lock_user_mutex();
 						removePlayer(spieler.id);
+						unlock_user_mutex();
 						// pruefe ob Spiel bereits laeft und Anzahl verbliebener Spieler
 						if((getGameRunning()) && (countUser() <= 2)){
 							// zu wenig Spieler
@@ -100,20 +104,22 @@ void *client_thread_main(int* client_id){
 							response.content.error.errortype = ERR_SERVER_TOOFEWPLAERS;
 							strncpy(response.content.error.errormessage,"Zu wenig Spieler, breche Spiel ab.",ntohs(response.header.length));
 							// sende Fehlermeldung an alle
+							lock_user_mutex();
 							sendToAll(response);
+							unlock_user_mutex();
 							// Server beenden
-							// endServer();
+							endServer();
 						}
 						// sende Spielerliste an alle verbliebene Spieler
 						sendPlayerList();
 					}
 				}
-
-				// TODO
 				else {
+					lock_user_mutex();
 					removePlayer(spieler.id);
+					unlock_user_mutex();
 					if(getGameRunning()){
-						// sendGameOver(0);
+						sendGameOver(0);
 					}
 				}
 				// beende Thread
@@ -123,7 +129,9 @@ void *client_thread_main(int* client_id){
 				// Client hat Kataloge angefagt - RFC_CATALOGREQUEST
 				case RFC_CATALOGREQUEST:
 					debugPrint("Catalog Request von Spieler-ID: %i Name: %s", spieler.id, spieler.name);
+					lock_user_mutex();
 					sendCatalog(spieler.sockDesc);
+					unlock_user_mutex();
 					// pruefe ob Katalog ausgewaehlt wurde - falls ja sende Katalog
 					if(isCatalogChosen()){
 						// Client erkennt somit den vom Spielleiter ausgewaehlten Katalog
@@ -135,7 +143,9 @@ void *client_thread_main(int* client_id){
 				case RFC_CATALOGCHANGE:
 					debugPrint("Catalog Change von Spieler-ID: %i Name: %s", spieler.id, spieler.name);
 					// setzte aktiven Katalog
+					lock_user_mutex();
 					setActiveCatalog(packet);
+					unlock_user_mutex();
 					// sende Katalogwechsel an alle Spieler
 					sendCatalogChange();
 					break;
@@ -166,7 +176,9 @@ void *client_thread_main(int* client_id){
 						question_number = 0;
 
 						// sende Paket mit aktuellem Katalog an alle Spieler
+						lock_user_mutex();
 						sendToAll(packet);
+						unlock_user_mutex();
 					}
 					break;
 
@@ -196,9 +208,11 @@ void *client_thread_main(int* client_id){
 						// versende Fragenpaket + aktualisierte Spielerliste
 						question_packet.content.question = quest_message;
 						sendPacket(question_packet, spieler.sockDesc);
+						lock_user_mutex();
 						sendPlayerList();
+						unlock_user_mutex();
 
-						//
+						// warte auf Clientantwort
 						time_left = questionTimer(&selection, shmQ->timeout, spieler.sockDesc);
 
 						// werte Restzeit aus - Zeit abgelaufen
@@ -209,7 +223,7 @@ void *client_thread_main(int* client_id){
 							QuestionAnswer.content.questionresult.correct = correct;
 							QuestionAnswer.content.questionresult.timeout = 1;
 							sendPacket(QuestionAnswer, spieler.sockDesc);
-							printf("Antwort gesendet!");
+							infoPrint("Antwort auf Frage gesendet!");
 							// The sem_post() function unlocks the semaphore referenced by sem by performing a semaphore unlock operation on that semaphore.
 							sem_post(&semaphor_score);
 						}
@@ -223,7 +237,7 @@ void *client_thread_main(int* client_id){
 								unsigned long score = (time_left * 1000UL) / (shmQ->timeout * 1000UL);
 								/* auf 10 er - Stellen runden */
 								score = ((score + 5UL) / 10UL) * 10UL;
-								infoPrint("Erreichte Punktzahl: %d", score);
+								infoPrint("Erreichte Punktzahl: %lu", score);
 								// Punkte in Benutzerverwaltung speichern
 								lock_user_mutex();
 								setUserScore(spieler.id, score);

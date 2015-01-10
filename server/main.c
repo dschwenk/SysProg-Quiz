@@ -122,7 +122,7 @@ void process_commands(int argc, char** argv) {
 			// Verbose
 			case 'v':
 				debugEnable();
-		    	infoPrint("debug Ausgabe aktiviert.\n");
+		    	infoPrint("debug Ausgabe aktiviert.");
 				break;
 			// Port
 			case 'p':
@@ -157,11 +157,11 @@ void setSingleInstance(int file){
 
     // pruefe ob Datei anlegen erfolgreich
     if (file < 0) {
-		debugPrint("Cannot create PID file\n");
+		debugPrint("Cannot create PID file");
 		exit(1);
     }
 
-    debugPrint("Acquiring file write lock\n");
+    debugPrint("Acquiring file write lock");
     /* Important: lock before doing any IO */
     lock.l_type = F_WRLCK;
     lock.l_whence = SEEK_SET;
@@ -171,14 +171,14 @@ void setSingleInstance(int file){
     // fcntl - manipulate file descriptor
     // F_GETLK, F_SETLK and F_SETLKW are used to acquire, release, and test for the existence of record locks
     if (fcntl(file, F_SETLK, &lock) < 0) {
-    	infoPrint("Server läuft bereits..\n");
+    	infoPrint("Server läuft bereits..");
     	exit(1);
     }
 
     // truncate - kuerzen
     // ftruncate, truncate - truncate a file to a specified length
     if (ftruncate(file, 0) < 0) {
-    	infoPrint("Server läuft bereits..\n");
+    	infoPrint("Server läuft bereits..");
     	exit(1);
     }
 
@@ -189,7 +189,7 @@ void setSingleInstance(int file){
     }
 
     if (fsync(file) < 0) {
-    	debugPrint("fsync\n");
+    	debugPrint("fsync");
     }
 }
 
