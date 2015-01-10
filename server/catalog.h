@@ -22,8 +22,8 @@ typedef struct CatalogArray {
 
 
 int addCatalog(char* name, int i);
-int sendCatalog(int);
-int setActiveCatalog(PACKET);
+void sendCatalog(int);
+void setActiveCatalog(PACKET);
 PACKET getActiveCatalog();
 bool isCatalogChosen();
 Question* getQuestion(int);

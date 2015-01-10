@@ -79,14 +79,14 @@ void* login_main(int sock){
 
 					// fuege Spieler zur Verwaltung hinzu, uebergebe Name + Socketdeskriptor
 					lock_user_mutex();
-					client_id = addPlayer(packet.content.playername,ntohs(packet.header.length), client_socket);
+					client_id = addPlayer(packet.content.loginrequest.playername,ntohs(packet.header.length), client_socket);
 					unlock_user_mutex();
 					// Name bereits vorhanden
 					if(client_id == -1){
 						errorPrint("Name bereits vorhanden");
 						response.header.type = RFC_ERRORWARNING;
 						response.header.length = htons(sizeof(ERROR));
-						response.content.error.errortype = ERR_SERVER_PLAYERNAMEEXIST;
+						response.content.error.errortype = ERR_PLAYERNAMEEXIST;
 						strncpy(response.content.error.errormessage, "Name bereits vorhanden", MAX_MESSAGE_LENGTH);
 					}
 					// Zu viele Spieler angemeldet
@@ -94,15 +94,15 @@ void* login_main(int sock){
 						errorPrint("Maximale Anzahl an Spielern erreicht!");
 						response.header.type = RFC_ERRORWARNING;
 						response.header.length = htons(sizeof(ERROR));
-						response.content.error.errortype = ERR_SERVER_MAXCOUNTPLAYERREACHED;
+						response.content.error.errortype = ERR_MAXCOUNTPLAYERREACHED;
 						strncpy(response.content.error.errormessage, "Maximale Anzahl an Spielern erreicht!", MAX_MESSAGE_LENGTH);
 					}
 					// ID ok - RFC_LOGINRESPONSEOK
 					else {
 						infoPrint("Spieler erfolgreich hinzugefuegt - Client-ID: %i", client_id);
 						response.header.type = RFC_LOGINRESPONSEOK;
-						response.header.length = htons(sizeof(uint8_t));
-						response.content.clientid = client_id;
+						response.header.length = htons(sizeof(uint8_t)*2);
+						response.content.loginresponseok.clientid = client_id;
 					}
 
                     // sofern Anmeldung ok - erstelle Clientthread fuer neu hinzugefuegten Spieler
@@ -123,7 +123,7 @@ void* login_main(int sock){
 					errorPrint("Spiel laeft bereits, Client kann nicht angemeldet werden");
 					response.header.type = RFC_ERRORWARNING;
 					response.header.length = htons(sizeof(ERROR));
-					response.content.error.errortype = ERR_SERVER_GAMEISRUNNING;
+					response.content.error.errortype = ERR_GAMEISRUNNING;
 					strncpy(response.content.error.errormessage, "Spiel laeft bereits, Client kann nicht angemeldet werden", MAX_MESSAGE_LENGTH);
 					// sende Antwort
 					sendPacket(response, client_socket);

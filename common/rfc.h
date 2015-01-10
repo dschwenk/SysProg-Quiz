@@ -15,6 +15,9 @@
 // maximale Anzahl an Spielern
 #define MAX_PLAYERS	4
 
+// RFC Version WS 14/15
+#define RFC_VERSION 6
+
 
 // Uebersicht über die Nachrichtentypen
 #define RFC_LOGINREQUEST         1 // Anmeldung eines Clients am Server
@@ -31,33 +34,40 @@
 #define RFC_GAMEOVER             12 // Alle Clients sind fertig, Mitteilung ueber Endplatzierung
 #define RFC_ERRORWARNING         255 // Fehlermeldung
 
-
-// selbst definierte Warnung-/Fehlertypen + Konstanten
 #define ERR_WARNING 0
 #define ERR_FATAL 1
 
-#define ERR_SERVER_CLOSE 100
-#define ERR_SERVER_MAXCOUNTPLAYERREACHED 101
-#define ERR_SERVER_PLAYERNAMEEXIST 102
-#define ERR_SERVER_GAMEISRUNNING 103
-#define ERR_SERVER_SPIELLEITERLEFTGAME 104
-#define ERR_SERVER_TOOFEWPLAERS 105
-#define ERR_SERVER_COULDNOTSTARTGAME 106
-#define ERR_SERVER_USERQUESTIONERROR 107
-
-#define ERR_CLIENT_CLIENTLEFTGAME 201
-
+// selbst definierte Warnung-/Fehlertypen + Konstanten ('ersetzen ERR_WARNUNG / FATAL)
+#define ERR_MAXCOUNTPLAYERREACHED 101
+#define ERR_PLAYERNAMEEXIST 102
+#define ERR_GAMEISRUNNING 103
+#define ERR_SPIELLEITERLEFTGAME 104
+#define ERR_TOOFEWPLAERS 105
+#define ERR_CLIENTLEFTGAME 107
 
 // max. Laenge Spielername (inkl. '\0')
 #define PLAYER_NAME_LENGTH 32
 // max. Laenge Katalogname (inkl. '\0')
 #define CATALOG_NAME_LENGTH 31
-// define max. Messagelength
+// define max. Messagelength (inkl. '\0')
 #define MAX_MESSAGE_LENGTH 100
+
 
 //Packen der Struckts auf minimale Größe - keine Fuellbytes
 #pragma pack(push,1)
 
+
+// LoginRequest
+typedef struct {
+	uint8_t RFCVersion;
+	char playername[PLAYER_NAME_LENGTH];
+} LOGINREQUEST;
+
+// LoginResponseOK
+typedef struct {
+	uint8_t RFCVersion;
+	uint8_t clientid;
+} LOGINRESPONSEOK;
 
 // Spelername + ID + Spielstand
 typedef struct {
@@ -66,13 +76,11 @@ typedef struct {
  	uint8_t id;
 } PLAYERLIST;
 
-
 // Errortype + Errormessage
 typedef struct {
 	 uint8_t errortype;
-	 char errormessage [MAX_MESSAGE_LENGTH];
+	 char errormessage[MAX_MESSAGE_LENGTH];
 } ERROR;
-
 
 // Antwortauswahl + richtige Antwort
 typedef struct {
@@ -83,13 +91,13 @@ typedef struct {
 
 // Union, um alle Nachrichten in Content zu verpacken
 typedef union {
-	char playername[PLAYER_NAME_LENGTH];	// LRQ - LoginRequest
-	uint8_t clientid;						// LOK - LoginResponseok
-	char catalogname[CATALOG_NAME_LENGTH];	// CRQ, CCH, STG - CatalogResponse, CatalogChange, StartGame
+	LOGINREQUEST loginrequest;				// LRQ - LoginRequest
+	LOGINRESPONSEOK loginresponseok;		// LOK - LoginResponseok
+	char catalogname[CATALOG_NAME_LENGTH];	// CRQ, CCH, STG - CatalogRequest, CatalogChange, StartGame
 	PLAYERLIST playerlist[MAX_PLAYERS];		// LST - Playerlist
-	QuestionMessage question;				// QRQ - Question
+	QuestionMessage question;				// QUE - Question
 	uint8_t selection;						// QAN - QuestionAnswered
-	QUESTIONRESULT questionresult;					// QRE - QuestionResult
+	QUESTIONRESULT questionresult;			// QRE - QuestionResult
 	uint8_t playerrank;						// GOV - GameOver
 	ERROR error;							// ERR - Error
 } CONTENT;

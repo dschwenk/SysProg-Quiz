@@ -206,7 +206,7 @@ void endServer(){
 	debugPrint("Beende Server.");
 
 	// Nachricht an alle Clients senden - sofern welche angemeldet
-	debugPrint("Sende Nachricht an Clients (sofern welche angemeldet sind): Server wird beendet.");
+	debugPrint("Sende Nachricht an Clients: Server wird beendet.");
 	if(countUser() > 0){
 		PACKET close_server_packet;
 		close_server_packet.header.type = RFC_ERRORWARNING;
@@ -505,7 +505,6 @@ void loadQuestions(char* name){
 	}
 	else {
 		errorPrint("Konnte nicht von Pipe lesen");
-		errorPrint(message);
 		endServer();
 		exit(0);
 	}

@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <semaphore.h>
 #include <stdbool.h>
+#include <pthread.h>
 
 
 int clientID;
@@ -76,7 +77,7 @@ void receivePlayerlist(PACKET packet){
 void receiveCatalogList(PACKET packet) {
     // Antwort auswerten und anzeigen
     infoPrint("%s", packet.content.catalogname);    
-    if (ntohs(packet.header.length) > 0) {
+    if(ntohs(packet.header.length) > 0){
 	    char buffer[ntohs(packet.header.length)];
 	    strncpy(buffer, packet.content.catalogname,ntohs(packet.header.length));
 	    buffer[ntohs(packet.header.length)] = '\0';
@@ -102,11 +103,13 @@ void receiveErrorMessage (PACKET packet){
 	error_message[ntohs (packet.header.length)-1]= '\0';
 	// zeige Errordialog + gebe Fehler auf Konsole aus
 	errorPrint("Fehler: %s\n", packet.content.error.errormessage);
-	// zeige Fehler in GUI
-	// guiShowMessageDialog(error_message, packet.content.error.errortype);
-	guiShowErrorDialog(error_message, packet.content.error.errortype);
 	// beende Client falls fataler Error
-	if((packet.content.error.errortype == ERR_SERVER_SPIELLEITERLEFTGAME) || (packet.content.error.errortype == ERR_SERVER_TOOFEWPLAERS)){
+	if(packet.content.error.errortype == ERR_SPIELLEITERLEFTGAME){
+		guiShowErrorDialog(error_message, 0);
+		exit(0);
+	}
+	else if((packet.content.error.errortype == ERR_TOOFEWPLAERS) && game_is_running){
+		guiShowMessageDialog(error_message, 0);
 		exit(0);
 	}
 }
@@ -129,12 +132,12 @@ void *listener_main(int * sockD){
     // RFC_LOGINRESPONSEOK
     if(response.header.type == RFC_LOGINRESPONSEOK){
         infoPrint("Login Response ok\n");
-        clientID = response.content.clientid;
+        clientID = response.content.loginresponseok.clientid;
 
         // RFC_CATALOGREQUEST - get catalog list
         catalogRequest();
     }
-        // RFC_ERRORWARNING
+	// RFC_ERRORWARNING
     else if(response.header.type == RFC_ERRORWARNING){
         char message[(ntohs(response.header.length))];
         strncpy(message, response.content.error.errormessage,ntohs(response.header.length) - 1);
@@ -145,7 +148,7 @@ void *listener_main(int * sockD){
         guiShowErrorDialog(message, response.content.error.errortype);
         exit(0);
     }
-        // Verbindung verloren
+	// Verbindung verloren
     else {
         // zeige in GUI Fehlermeldung an
         infoPrint("Verbindung zum Server verloren!");
@@ -218,15 +221,8 @@ void *listener_main(int * sockD){
 				game_setControlsEnabled(0);
 
 				if (ntohs(packet.header.length) > 0) {
-					printf("KORREKT = %i\n", packet.content.questionresult.correct);
-					printf("SELECT = %i\n", packet.content.questionresult.timeout);
-
-					/*if (packet.content.questionresult.correct > 3) {
-						packet.content.questionresult.correct = 3;
-						printf("Falsche Korrektur empfangen!");
-						//break;
-					}*/
-
+					infoPrint("Korrekte Antwort: %i\n", packet.content.questionresult.correct);
+					infoPrint("Spiler Antowrt: %i\n", packet.content.questionresult.timeout);
 					for (int i = 0; i < NUM_ANSWERS; i++) {
 						if (packet.content.questionresult.correct & (1 << i)) {
 							game_markAnswerCorrect(i);

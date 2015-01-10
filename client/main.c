@@ -74,10 +74,10 @@ int establishConnection(int socketD_, char* port_, char* hostname_) {
 void loginRequest(char* name) {
 	PACKET packet;
 	packet.header.type = RFC_LOGINREQUEST;
-	// Laenge Name berechnen + Name in packet kopieren
-	packet.header.length = htons(strlen(name));
-	strncpy(packet.content.playername, name, strlen(name));
-	// sende Nachrichtc
+	packet.header.length = htons(sizeof(name));
+	strncpy(packet.content.loginrequest.playername, name, strlen(name));
+	packet.content.loginrequest.RFCVersion = RFC_VERSION;
+	// sende Nachricht
 	sendPacket(packet, socketDeskriptor);
 }
 
@@ -246,7 +246,7 @@ void preparation_onWindowClosed(void) {
     PACKET packet;
     packet.header.type = RFC_ERRORWARNING;
     packet.header.length = htons(strlen("Der Spieler hat das Spiel verlassen!"));
-    packet.content.error.errortype = ERR_CLIENT_CLIENTLEFTGAME;
+    packet.content.error.errortype = ERR_CLIENTLEFTGAME;
     strncpy(packet.content.error.errormessage,"Der Spieler hat das Spiel verlassen!",ntohs(packet.header.length));
     sendPacket(packet, socketDeskriptor);
     guiQuit();
@@ -256,14 +256,11 @@ void preparation_onWindowClosed(void) {
 void game_onSubmitClicked(unsigned char selectedAnswers)
 {
 	infoPrint("Absende-Button angeklickt, Bitmaske der Antworten: %u",	(unsigned)selectedAnswers);
-
 	selection = selectedAnswers;
 	PACKET packet;
-
 	packet.header.type = RFC_QUESTIONANSWERED;
 	packet.header.length = htons(sizeof(uint8_t));
 	packet.content.selection = (uint8_t) selection;
-	printf("blaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa %d", selection);
 	sendPacket(packet, socketDeskriptor);
 }
 
@@ -273,7 +270,7 @@ void game_onWindowClosed(void) {
     PACKET packet;
     packet.header.type = RFC_ERRORWARNING;
     packet.header.length = htons(strlen("Der Spieler hat das Spiel verlassen!"));
-    packet.content.error.errortype = ERR_CLIENT_CLIENTLEFTGAME;
+    packet.content.error.errortype = ERR_CLIENTLEFTGAME;
     strncpy(packet.content.error.errormessage,"Der Spieler hat das Spiel verlassen!",ntohs(packet.header.length));
     sendPacket(packet, socketDeskriptor);
     guiQuit();

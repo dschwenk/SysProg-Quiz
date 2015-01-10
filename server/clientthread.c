@@ -56,7 +56,6 @@ void *client_thread_main(int* client_id){
 		// Fehlerbehandlung falls bei letzter Frage ein Zeitfehler auftrat
 		if(time_error){
 			packet.header.type = RFC_ERRORWARNING;
-			packet.content.error.errortype == ERR_SERVER_USERQUESTIONERROR;
 			time_error = false;
 		}
 		// empfange
@@ -71,7 +70,7 @@ void *client_thread_main(int* client_id){
 			case RFC_ERRORWARNING:
 				// pruefe Subtyp
 				// Spieler hat das Spiel verlassen
-				if(packet.content.error.errortype == ERR_CLIENT_CLIENTLEFTGAME){
+				if(packet.content.error.errortype == ERR_CLIENTLEFTGAME){
 					debugPrint("Spieler %s (ID: %d) hat das Spiel verlassen", spieler.name, spieler.id);
 					// pruefe ob Spielleiter
 					if(is_spielleiter){
@@ -80,7 +79,7 @@ void *client_thread_main(int* client_id){
 						// setzte Fehlertyp + Text
 						response.header.type = RFC_ERRORWARNING;
 						response.header.length = htons(strlen("Der Spieleiter hat das Spiel verlassen, der Server wird beendet!"));
-						response.content.error.errortype = ERR_SERVER_SPIELLEITERLEFTGAME;
+						response.content.error.errortype = ERR_SPIELLEITERLEFTGAME;
 						strncpy(response.content.error.errormessage,"Der Spieleiter hat das Spiel verlassen, der Server wird beendet!",	ntohs(response.header.length));
 						// sende Fehlermeldung an alle
 						lock_user_mutex();
@@ -101,7 +100,7 @@ void *client_thread_main(int* client_id){
 							// zu wenig Spieler
 							response.header.type = RFC_ERRORWARNING;
 							response.header.length = htons(strlen("Zu wenig Spieler, breche Spiel ab."));
-							response.content.error.errortype = ERR_SERVER_TOOFEWPLAERS;
+							response.content.error.errortype = ERR_TOOFEWPLAERS;
 							strncpy(response.content.error.errormessage,"Zu wenig Spieler, breche Spiel ab.",ntohs(response.header.length));
 							// sende Fehlermeldung an alle
 							lock_user_mutex();
@@ -158,7 +157,7 @@ void *client_thread_main(int* client_id){
 						infoPrint("Zu wenige Spieler um das Spiel zu starten!");
 						response.header.type = RFC_ERRORWARNING;
 						response.header.length = htons(strlen("Zu wenige Spieler um das Spiel zu starten!"));
-						response.content.error.errortype = ERR_SERVER_COULDNOTSTARTGAME;
+						response.content.error.errortype = ERR_TOOFEWPLAERS;
 						strncpy(response.content.error.errormessage,"Zu wenige Spieler um das Spiel zu starten!", ntohs(response.header.length));
 						sendPacket(response, spieler.sockDesc);
 					}

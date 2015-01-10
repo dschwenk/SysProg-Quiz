@@ -65,26 +65,23 @@ int addCatalog(char* name, int i){
  *
  * int client_socket Socketdeskriptor des Clients
  */
-int sendCatalog(int client_socket){
-	PACKET send_catalog_packet;
-	send_catalog_packet.header.type = RFC_CATALOGRESPONSE;
+void sendCatalog(int client_socket){
+	PACKET packet;
+	packet.header.type = RFC_CATALOGRESPONSE;
 	// gehe alle verfuegbaren Kataloge durch
 	for(int i=0;i<= catalog_count;i++){
 		// konvertiere Werte von host byte order zu network byte order
-		send_catalog_packet.header.length = htons(strlen(catalog_array[i].CatalogName));
+		packet.header.length = htons(strlen(catalog_array[i].CatalogName));
 		// kopiere Katalogname in Paket
-		strncpy(send_catalog_packet.content.catalogname, catalog_array[i].CatalogName,sizeof(catalog_array[i].CatalogName));
+		strncpy(packet.content.catalogname, catalog_array[i].CatalogName,sizeof(catalog_array[i].CatalogName));
 		debugPrint("Sende Katalog an Client.");
-		sendPacket(send_catalog_packet, client_socket);
+		sendPacket(packet, client_socket);
 	}
 	// sende zum Abschluss einen leeren RFC_CATALOGRESPONSE --> alle Kataloge uebertragen
-	/*
-	send_catalog_packet.header.length = htons(0);
-	strncpy(send_catalog_packet.content.catalogname, "", sizeof(""));
 	debugPrint("Sende leeres Katalogpacket zum Abschluss an Client.");
-	sendPacket(send_catalog_packet, client_socket);
-	*/
-	return 1;
+	packet.header.length = htons(0);
+	strncpy(packet.content.catalogname, "", sizeof(""));
+	sendPacket(packet, client_socket);
 }
 
 
@@ -92,11 +89,10 @@ int sendCatalog(int client_socket){
  * Funktion setzt den aktiven / gewaehlten Katalog
  * PACKET packet enthaelt den aktuell gewaehlten Fragenkatalog
  */
-int setActiveCatalog(PACKET packet){
+void setActiveCatalog(PACKET packet){
 	activeCatalog = packet;
 	// es wurde ein Katalog ausgewaehlt
 	is_catalog_chosen = true;
-	return 0;
 }
 
 

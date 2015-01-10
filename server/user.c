@@ -180,15 +180,19 @@ int countUser(){
 
 
 /*
- * Funktion sendet den aktuellen Katalog an alle Spieler
+ * Funktion sendet den aktuellen Katalog an alle Spieler (ausser an Spielleiter)
  */
 void sendCatalogChange(){
-	debugPrint("Sende aktuellen Katalog an alle Spieler.");
+	debugPrint("Sende aktuellen Katalog an alle Spieler (ausser an Spielleiter)");
 	PACKET packet;
 	// hole aktuellen Katalog
 	packet = getActiveCatalog();
-	// sende Nachricht mit aktuellem Katalog an alle
-	sendToAll(packet);
+	// sende gewaehlten Katalog an alle Spieler (ausser an Spielleiter)
+	for(int i = 0; i < countUser(); i++){
+		if(spieler[i].id != 0){
+			sendPacket(packet, spieler[i].sockDesc);
+		}
+	}
 	return;
 }
 
