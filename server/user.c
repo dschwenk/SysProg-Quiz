@@ -59,17 +59,17 @@ int addPlayer(char *name, int length, int sock){
 	debugPrint("Fuege Spieler zur Verwaltung hinzu.");
 	name[length] = 0;
 	int current_count_user = countUser();
-	lock_user_mutex();
+	//lock_user_mutex();
 	// sind noch freie Spielerplaetze vorhanden
 	if(current_count_user >= MAX_PLAYERS){
-		unlock_user_mutex();
+		//unlock_user_mutex();
 		return MAX_PLAYERS;
 	}
 	else {
 		// pruefe auf gleichen Namen
 		for(int i = 0; i < current_count_user; i++){
 			if(strncmp(spieler[i].name, name, length + 1) == 0){
-				unlock_user_mutex();
+				//unlock_user_mutex();
 				return -1;
 			}
 		}
@@ -79,7 +79,7 @@ int addPlayer(char *name, int length, int sock){
 		strncpy(spieler[new_id].name, name, length + 1);
 		spieler[new_id].sockDesc = sock;
 		// gebe Spieler-ID zurueck
-		unlock_user_mutex();
+		//unlock_user_mutex();
 		return new_id;
 	}
 }
@@ -95,7 +95,7 @@ int removePlayer(int client_id){
 	debugPrint("Loesche Spieler - setzte Daten auf Standard zurueck!");
 	int i = 0;
 	int current_user_count = countUser();
-	lock_user_mutex();
+	//lock_user_mutex();
 	// suche Spieler im Array
 	while(spieler[i].id != client_id){
 		i++;
@@ -105,6 +105,7 @@ int removePlayer(int client_id){
 	spieler[i].name[0] = '\0';
 	spieler[i].sockDesc = 0;
 	spieler[i].score = 0;
+	spieler[i].GameOver = 0;
 	// gehe Spielerliste durch und setze geloeschten / default Spieler an letzte Stelle von Array
 	while(i < current_user_count){
 		PLAYER temp = spieler[i];
@@ -112,7 +113,7 @@ int removePlayer(int client_id){
 		spieler[i+1] = temp;
 		i++;
 	}
-	unlock_user_mutex();
+	//unlock_user_mutex();
 	// aktualisiere Spielstand / Rangfolge
 	setPlayerRanking();
 	// sende PlayerList an alle Spieler
@@ -172,7 +173,7 @@ void sendPlayerList(){
  * Funktion zaehlt aktuell angemeldete Spieler
  */
 int countUser(){
-	lock_user_mutex();
+	//lock_user_mutex();
 	debugPrint("Zaehle aktuell angemeldete Spieler.");
 	int current_user_count = 0;
 	for(int i=0;i< MAX_PLAYERS;i++){
@@ -181,7 +182,7 @@ int countUser(){
 			current_user_count++;
 		}
 	}
-	unlock_user_mutex();
+	//unlock_user_mutex();
 	// gebe Anzahl an Spielern zurueck
 	return current_user_count;
 }

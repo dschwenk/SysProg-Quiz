@@ -22,7 +22,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <semaphore.h>
+#include <stdbool.h>
 
+
+int clientID;
+bool game_is_running = false;
 
 void receivePlayerlist(PACKET packet){
 
@@ -32,8 +36,20 @@ void receivePlayerlist(PACKET packet){
 	// printf("Test: %i\n",packet.header.length);
 	spielerzahl = ntohs(packet.header.length)/37; // 37 == Groesse PLAYERLIST 1 Spieler
 	printf("Anzahl Spieler in der Playerlist: %i\n",spielerzahl);
+
 	// Playerlist leeren
 	preparation_clearPlayers();
+
+	for (int i = 1; i < MAX_PLAYERS; i++) {
+		game_setPlayerName(i, "");
+		game_setPlayerScore(i, 0);
+	}
+
+	if (game_is_running && spielerzahl < 2) {
+		guiShowMessageDialog("Zu wenig Spieler! Spiel wird beendet!", 1); //1=gui main geht nach Bestätigen zum Aufrufer zurück
+		pthread_exit(0);
+	}
+
 	for(int i=0;i< spielerzahl;i++){
 		// kopiere Spieler ID in Spielerliste
 		userlist[i].id=packet.content.playerlist[i].id;
@@ -47,6 +63,13 @@ void receivePlayerlist(PACKET packet){
 		// Ausgabe der angemeldeten Spieler
 		printf("%s ist angemeldet\n", userlist[i].name);
 		preparation_addPlayer(userlist[packet.content.playerlist[i].id].name);
+
+		game_setPlayerName(i + 1, packet.content.playerlist[i].playername);
+		game_setPlayerScore(i + 1, ntohl(packet.content.playerlist[i].score));
+		if ((clientID == userlist[i].id)) {
+			game_highlightPlayer(i + 1);
+			printf("clientID trifft zu:%i \n", clientID);
+		}
 	}
 }
 
@@ -102,7 +125,6 @@ void *listener_main(int * sockD){
 
     // warte auf Antwort des Servers
     PACKET response = recvPacket(*sockD);
-    int clientID;
 
     // RFC_LOGINRESPONSEOK
     if(response.header.type == RFC_LOGINRESPONSEOK){
@@ -159,7 +181,7 @@ void *listener_main(int * sockD){
 			// RFC_STARTGAME
 			case RFC_STARTGAME:
 				infoPrint("Spiel gestartet!");
-
+				game_is_running = true;
 				questionRequest(*sockD);
 
 				// Vorbereitungsfenster ausblenden und Spielfenster anzeigen

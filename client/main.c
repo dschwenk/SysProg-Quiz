@@ -262,7 +262,8 @@ void game_onSubmitClicked(unsigned char selectedAnswers)
 
 	packet.header.type = RFC_QUESTIONANSWERED;
 	packet.header.length = htons(sizeof(uint8_t));
-	packet.content.selection = (uint8_t) index;
+	packet.content.selection = (uint8_t) selection;
+	printf("blaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa %d", selection);
 	sendPacket(packet, socketDeskriptor);
 }
 

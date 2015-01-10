@@ -209,6 +209,7 @@ void *client_thread_main(int* client_id){
 							QuestionAnswer.content.questionresult.correct = correct;
 							QuestionAnswer.content.questionresult.timeout = 1;
 							sendPacket(QuestionAnswer, spieler.sockDesc);
+							printf("Antwort gesendet!");
 							// The sem_post() function unlocks the semaphore referenced by sem by performing a semaphore unlock operation on that semaphore.
 							sem_post(&semaphor_score);
 						}
@@ -235,6 +236,7 @@ void *client_thread_main(int* client_id){
 							QuestionAnswer.content.questionresult.correct = correct;
 							QuestionAnswer.content.questionresult.timeout = 0;
 							sendPacket(QuestionAnswer, spieler.sockDesc);
+							printf("Antwort gesendet!");
 						}
 						// Fehler
 						else {
