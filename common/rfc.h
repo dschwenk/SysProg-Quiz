@@ -91,15 +91,15 @@ typedef struct {
 
 // Union, um alle Nachrichten in Content zu verpacken
 typedef union {
-	LOGINREQUEST loginrequest;				// LRQ - LoginRequest
-	LOGINRESPONSEOK loginresponseok;		// LOK - LoginResponseok
+	LOGINREQUEST loginrequest;		// LRQ - LoginRequest
+	LOGINRESPONSEOK loginresponseok;	// LOK - LoginResponseok
 	char catalogname[CATALOG_NAME_LENGTH];	// CRQ, CCH, STG - CatalogRequest, CatalogChange, StartGame
-	PLAYERLIST playerlist[MAX_PLAYERS];		// LST - Playerlist
-	QuestionMessage question;				// QUE - Question
-	uint8_t selection;						// QAN - QuestionAnswered
-	QUESTIONRESULT questionresult;			// QRE - QuestionResult
-	uint8_t playerrank;						// GOV - GameOver
-	ERROR error;							// ERR - Error
+	PLAYERLIST playerlist[MAX_PLAYERS];	// LST - Playerlist
+	QuestionMessage question;		// QUE - Question
+	uint8_t selection;			// QAN - QuestionAnswered
+	QUESTIONRESULT questionresult;		// QRE - QuestionResult
+	uint8_t playerrank;			// GOV - GameOver
+	ERROR error;				// ERR - Error
 } CONTENT;
 
 

@@ -40,7 +40,7 @@ void sendPacket(PACKET packet, int socketDeskriptor){
 	}
 	else {
 		// Testweise ausgeben welcher Typ an welchen Socket versendet wurde
-		infoPrint("Nachicht vom Type %i an die Socket-ID: %i gesendet\n", packet.header.type, socketDeskriptor);
+		infoPrint("Nachicht vom Type %i an die Socket-ID: %i gesendet", packet.header.type, socketDeskriptor);
 	}
 
 }

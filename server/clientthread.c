@@ -166,11 +166,9 @@ void *client_thread_main(int* client_id){
 						setGameRunning();
 						char catalog[CATALOG_NAME_LENGTH];
 
-						// kopiere aktiven Katalognamen in Paket
+						// lade Fragen des aktiven Katalogs
 						strncpy(catalog, packet.content.catalogname,ntohs(packet.header.length));
 						catalog[ntohs(packet.header.length)] = '\0';
-
-						// lade Fragen des aktiven Katalogs
 						loadQuestions(catalog);
 						question_number = 0;
 

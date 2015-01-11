@@ -76,7 +76,6 @@ void* login_main(int sock){
 
 				// sofern Spiel nicht laeuft
 				if(!game_running){
-
 					// fuege Spieler zur Verwaltung hinzu, uebergebe Name + Socketdeskriptor
 					lock_user_mutex();
 					client_id = addPlayer(packet.content.loginrequest.playername,ntohs(packet.header.length), client_socket);
@@ -101,14 +100,15 @@ void* login_main(int sock){
 					else {
 						infoPrint("Spieler erfolgreich hinzugefuegt - Client-ID: %i", client_id);
 						response.header.type = RFC_LOGINRESPONSEOK;
-						response.header.length = htons(sizeof(uint8_t)*2);
+						response.header.length = htons(2);
 						response.content.loginresponseok.clientid = client_id;
+						response.content.loginresponseok.RFCVersion = RFC_VERSION;
 					}
 
                     // sofern Anmeldung ok - erstelle Clientthread fuer neu hinzugefuegten Spieler
                     if(response.header.type != RFC_ERRORWARNING){
                         // uebergebe Client-ID an Client-Thread
-                        printf("Erstelle Client-Thread");
+                        infoPrint("Erstelle Client-Thread");
                         pthread_create(&client_threads[client_id], NULL, (void *) &client_thread_main, &client_id);
                     }
 

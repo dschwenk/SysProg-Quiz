@@ -74,8 +74,9 @@ int establishConnection(int socketD_, char* port_, char* hostname_) {
 void loginRequest(char* name) {
 	PACKET packet;
 	packet.header.type = RFC_LOGINREQUEST;
-	packet.header.length = htons(sizeof(name));
-	strncpy(packet.content.loginrequest.playername, name, strlen(name));
+	//packet.header.length = htons(sizeof(name));
+	packet.header.length = htons(strlen(name)+1);
+	strncpy(packet.content.loginrequest.playername, name, ntohs(packet.header.length));
 	packet.content.loginrequest.RFCVersion = RFC_VERSION;
 	// sende Nachricht
 	sendPacket(packet, socketDeskriptor);
@@ -131,8 +132,8 @@ void process_client_commands(int argc, char** argv) {
 			// Name
 			case 'n':
 				name = optarg;
-				if(strlen(name) >= 32) {
-					infoPrint("Name darf nur max. 32 Zeichen lang sein");
+				if(strlen(name) >= 31) {
+					infoPrint("Name darf nur max. 31 Zeichen lang sein");
 					exit(1);
 				}
 				userNameIsSet = true;

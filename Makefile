@@ -45,7 +45,6 @@ SERVER_MODULES=server/catalog.o \
 	       server/main.o \
 	       server/score.o \
 	       server/user.o \
-	       common/rfc.o \
 	       common/sockets.o \
 	       common/networking.o \
 	       common/util.o
@@ -53,7 +52,6 @@ SERVER_MODULES=server/catalog.o \
 CLIENT_MODULES=client/fragewechsel.o \
 	       client/listener.o \
 	       client/main.o \
-	       common/rfc.o \
 	       common/sockets.o \
 	       common/networking.o \
 	       common/util.o

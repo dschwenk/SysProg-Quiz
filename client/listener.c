@@ -59,8 +59,10 @@ void receivePlayerlist(PACKET packet){
 			printf("Maximale Anzahl an Spieler erreicht!\n");
 			exit(1);
 		}
+
 		// kopiere Name aus Paket in Spielerliste
 		strncpy(userlist[i].name, packet.content.playerlist[i].playername,PLAYER_NAME_LENGTH);
+
 		// Ausgabe der angemeldeten Spieler
 		printf("%s ist angemeldet\n", userlist[i].name);
 		preparation_addPlayer(userlist[packet.content.playerlist[i].id].name);
