@@ -30,7 +30,7 @@ void *client_thread_main(int* client_id){
 
 	// Variablen fuer Spielablauf
 	Question* shmQ;
-	int question_number; // Fragenummer
+	int question_number = 0; // Fragenummer
 	int correct; // Bitmaske für richtige Antworten
 	int time_left = 0; // Zeit fuer Beantwortung der Frage
 	uint8_t selection = 5; // vom Spieler gewaehlte Antowrt
@@ -109,8 +109,9 @@ void *client_thread_main(int* client_id){
 							// Server beenden
 							endServer();
 						}
-						// sende Spielerliste an alle verbliebene Spieler
-						sendPlayerList();
+						// sende aktualisierte Spielerliste an alle verbliebene Spieler
+						// sendPlayerList();
+						sem_post(&semaphor_score);
 					}
 				}
 				else {
@@ -170,7 +171,6 @@ void *client_thread_main(int* client_id){
 						strncpy(catalog, packet.content.catalogname,ntohs(packet.header.length));
 						catalog[ntohs(packet.header.length)] = '\0';
 						loadQuestions(catalog);
-						question_number = 0;
 
 						// sende Paket mit aktuellem Katalog an alle Spieler
 						lock_user_mutex();
@@ -181,7 +181,7 @@ void *client_thread_main(int* client_id){
 
 				// Spieler fordert Frage an
 				case RFC_QUESTIONREQUEST:
-
+					// lade naechste Frage
 					shmQ = getQuestion(question_number);
 					question_number++;
 					PACKET question_packet;
@@ -239,6 +239,7 @@ void *client_thread_main(int* client_id){
 								lock_user_mutex();
 								setUserScore(spieler.id, score);
 								unlock_user_mutex();
+								// The sem_post() function unlocks the semaphore referenced by sem by performing a semaphore unlock operation on that semaphore.
 								sem_post(&semaphor_score);
 							}
 							PACKET QuestionAnswer;
@@ -247,7 +248,7 @@ void *client_thread_main(int* client_id){
 							QuestionAnswer.content.questionresult.correct = correct;
 							QuestionAnswer.content.questionresult.timeout = 0;
 							sendPacket(QuestionAnswer, spieler.sockDesc);
-							printf("Antwort gesendet!");
+							infoPrint("Antwort gesendet!");
 						}
 						// Fehler
 						else {
@@ -311,16 +312,16 @@ int questionTimer(uint8_t* selection, int timeout, int sockD){
 		if(select > 0){
 			// empfange Nachricht
 			packet = recvPacket(sockD);
-			//
-			if(packet.header.type == 0){
-				return 0;
-			}
-			else if(packet.header.type == RFC_QUESTIONANSWERED){
+			if(packet.header.type == RFC_QUESTIONANSWERED){
 				memcpy(selection, &packet.content.selection, 1);
+			}
+			else {
+				return 0;
 			}
 			waiting_for_answer = false;
 		}
 
+		// aktuelle Systemzeit holen
 		clock_gettime(CLOCK_MONOTONIC, &timeStart);
 
 		// vergleiche Start & Endzeit - pruefe ob Zeit abgelaufen

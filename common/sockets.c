@@ -52,7 +52,7 @@ int openServerSocket(unsigned short port) {
 		return -1;
 	}
 	// testweise Serverport ausgeben
-	infoPrint("Serverport: %d\n", port);
+	infoPrint("Serverport: %d", port);
 	return login_socket;
 }
 

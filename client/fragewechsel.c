@@ -13,12 +13,13 @@
 
 #include <unistd.h>
 
-
+/*
+ * Thread fordert Fragen vom Server an
+ */
 void *fragewechsel_main(int *sockD) {
     while(1){
-        infoPrint("While läuft!");
+        // warte auf Freigabe
         sem_wait(&frage);
-        infoPrint("Sem läuft!");
         sleep(3);
         // Frage vom Server anfordern
         questionRequest(*sockD);

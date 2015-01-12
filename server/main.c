@@ -47,7 +47,7 @@ const char *program_name = "loader";
 // PID Loader
 pid_t forkResult;
 // Groesse Shared Memory
-int shmLen = 20;
+int shmLen = 0;
 // Handle fuer Shared Memory
 int shmHandle;
 // Shared Memory Mapping
@@ -60,24 +60,32 @@ int stdinPipe[2];
 char* catalog_dir = { "../catalog" };
 
 
-
+/*
+ * Funktion setzt den Serverport
+ */
 void set_port(char* port_str){
 	int port = atoi(port_str);
 	if((port < 65535) && (port > 0)){
 		server_port = port;
 	}
 	else {
-		infoPrint("Port muss zwischen 1 - 65535 sein!\n");
-		infoPrint("Es wird der Standardport 8111 verwendet\n");
+		infoPrint("Port muss zwischen 1 - 65535 sein!");
+		infoPrint("Es wird der Standardport 8111 verwendet");
 		server_port = 8111;
 	}
 }
 
+
+/*
+ * Funktion gibt den Serverport zurueck
+ */
 int get_port(){
-        return server_port;
+	return server_port;
 }
 
-// gebe Hilfe aus
+/*
+ * Funktion gibt Hilfe aus
+ */
 void show_help() {
     printf("Available options:\n");
     printf("    -p --port       specify a port (argument)\n");
@@ -88,11 +96,10 @@ void show_help() {
 
 
 /**
- * Verarbeite Startparameter
+ * Funktion wertet Startparameter aus
  * param argc - Anzahl der Startparameter
  * param argv - Startparameter
  */
-
 void process_commands(int argc, char** argv) {
 
     debugPrint("Parsing command line options...");
@@ -185,7 +192,7 @@ void setSingleInstance(int file){
     // hole PID des servers
     int pid = getpid();
     if (write(file, &pid, sizeof(pid)) < sizeof(pid)) {
-    	debugPrint("write\n");
+    	debugPrint("write");
     }
 
     if (fsync(file) < 0) {
@@ -200,7 +207,10 @@ void closeSingleInstance(int file){
 }
 
 
-// hinterlasse nach beenden ein sauberes System
+/*
+ * Funktion schliesst alle verwendeten Ressourcen und
+ * beendet den Server
+ */
 void endServer(){
 
 	debugPrint("Beende Server.");
@@ -302,7 +312,7 @@ int main(int argc, char ** argv) {
 	signal(SIGINT, INThandler);
 
 	// gebe Gruppennamen aus
-	infoPrint("Server Gruppe Joos, Frick & Schwenk\n");
+	infoPrint("\n\nServer Gruppe Joos, Frick & Schwenk\n");
 
 	// Spielerverwaltung initialisieren
 	initSpielerverwaltung();
@@ -459,7 +469,7 @@ int loadCatalogs(){
 			i++;
 		}
 	}
-	infoPrint("Kataloge eingelesen: %i\n", i);
+	infoPrint("Kataloge eingelesen: %i", i);
 	return 0;
 }
 
@@ -501,10 +511,10 @@ void loadQuestions(char* name){
 		// The memmove() function copies n bytes from memory area src to memory area dest
 		memmove(message, message + sizeof(LOAD_SUCCESS_PREFIX) - 1, 50);
 		loaded = atoi(message);
-		infoPrint("Anzahl an eingelesenen Katalogen: %i", loaded);
+		infoPrint("Anzahl an eingelesenen Fragen: %i", loaded);
 	}
 	else {
-		errorPrint("Konnte nicht von Pipe lesen");
+		errorPrint("Fragen konnten nicht geladen werden");
 		endServer();
 		exit(0);
 	}

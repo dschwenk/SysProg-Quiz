@@ -141,7 +141,7 @@ void process_client_commands(int argc, char** argv) {
 			// Verbose
 			case 'v':
 				debugEnable();
-				infoPrint("debug Ausgabe aktiviert.\n");
+				infoPrint("debug Ausgabe aktiviert.");
 				break;
 			// Port
 			case 'p':
@@ -162,7 +162,7 @@ void process_client_commands(int argc, char** argv) {
 
 	// Es wurde kein Name angegeben
 	if(!userNameIsSet){
-    	infoPrint("Es wurde kein Name angegeben\n");
+    	infoPrint("Es wurde kein Name angegeben");
     	show_Clienthelp();
 		exit(0);
 	}
@@ -185,14 +185,14 @@ int main(int argc, char **argv){
 	// stelle Verbindung zum Server her
 	if(establishConnection(socketDeskriptor, port, server) == 0){
 
-		infoPrint("Verbindung hergestellt\n");
+		infoPrint("Verbindung hergestellt");
 
 		// GUI initialisieren
-		infoPrint("Initialisiere GUI\n");
+		infoPrint("Initialisiere GUI");
 		guiInit(&argc, &argv);
 
 		// Erstellen des LoginRequest
-		infoPrint("sende LoginReqest\n");
+		infoPrint("sende LoginReqest");
 		loginRequest(name);
 
 		// strate Listener_thread

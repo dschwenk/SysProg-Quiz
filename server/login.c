@@ -138,14 +138,18 @@ void* login_main(int sock){
 
 
 
-// setzte Spielstatus auf 'Spiel gestartet
+/*
+ * Funktion setzt den  Spielstatus auf 'Spiel gestartet
+ */
 void setGameRunning(){
 	game_running = true;
 	return;
 }
 
 
-// gebe Spielstatus zurueck
+/*
+ * Funktion gibt den  Spielstatus zurueck
+ */
 bool getGameRunning(){
 	return game_running;
 }

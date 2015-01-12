@@ -245,10 +245,12 @@ int isGameOver(){
 
 
 /*
- *
+ * Funktion aktualisiert den Spielstatus eines Spielers
+ * wenn dieser alle Fragen beantwortet hat
  */
 void sendGameOver(int id){
 	int i = 0;
+	// suche Spieler der das Spiel beendet hat
 	while(spieler[i].id != id){
 		i++;
 	}
@@ -262,7 +264,7 @@ void sendGameOver(int id){
 			packet.content.playerrank = j + 1;
 			sendPacket(packet, spieler[j].sockDesc);
 		}
-		// Server + Thread beenden
+		// Server beenden
 		endServer();
 		exit(0);
 		return;

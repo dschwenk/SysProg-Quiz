@@ -29,19 +29,23 @@
 int clientID;
 bool game_is_running = false;
 
+
+/*
+ * Funktion wertet spielerliste aus und aktualisiert
+ * die Spielerliste in der GUI
+ */
 void receivePlayerlist(PACKET packet){
 
 	USER userlist[MAX_PLAYERS];
 	int spielerzahl=0;
 
-	// printf("Test: %i\n",packet.header.length);
 	spielerzahl = ntohs(packet.header.length)/37; // 37 == Groesse PLAYERLIST 1 Spieler
-	printf("Anzahl Spieler in der Playerlist: %i\n",spielerzahl);
+	infoPrint("Anzahl Spieler in der Playerlist: %i",spielerzahl);
 
 	// Playerlist leeren
 	preparation_clearPlayers();
 
-	for (int i = 1; i < MAX_PLAYERS; i++) {
+	for (int i = 1; i <= MAX_PLAYERS; i++) {
 		game_setPlayerName(i, "");
 		game_setPlayerScore(i, 0);
 	}
@@ -56,7 +60,7 @@ void receivePlayerlist(PACKET packet){
 		userlist[i].id=packet.content.playerlist[i].id;
 		// mehr als 4 Spieler?
 		if(i > MAX_PLAYERS){
-			printf("Maximale Anzahl an Spieler erreicht!\n");
+			infoPrint("Maximale Anzahl an Spieler erreicht!");
 			exit(1);
 		}
 
@@ -64,29 +68,39 @@ void receivePlayerlist(PACKET packet){
 		strncpy(userlist[i].name, packet.content.playerlist[i].playername,PLAYER_NAME_LENGTH);
 
 		// Ausgabe der angemeldeten Spieler
-		printf("%s ist angemeldet\n", userlist[i].name);
+		infoPrint("%s ist angemeldet", userlist[i].name);
 		preparation_addPlayer(userlist[packet.content.playerlist[i].id].name);
 
 		game_setPlayerName(i + 1, packet.content.playerlist[i].playername);
 		game_setPlayerScore(i + 1, ntohl(packet.content.playerlist[i].score));
 		if ((clientID == userlist[i].id)) {
 			game_highlightPlayer(i + 1);
-			printf("clientID trifft zu:%i \n", clientID);
+			infoPrint("clientID %i trifft zu, hebe Spielername hervor", clientID);
 		}
 	}
 }
 
+
+/*
+ * Funktion wertet empfangen Katalog aus und
+ * fuegt diesen der GUI hinzu
+ */
 void receiveCatalogList(PACKET packet) {
     // Antwort auswerten und anzeigen
-    infoPrint("%s", packet.content.catalogname);    
     if(ntohs(packet.header.length) > 0){
-	    char buffer[ntohs(packet.header.length)];
+        infoPrint("%s", packet.content.catalogname);
+    	char buffer[ntohs(packet.header.length)];
 	    strncpy(buffer, packet.content.catalogname,ntohs(packet.header.length));
 	    buffer[ntohs(packet.header.length)] = '\0';
 	    preparation_addCatalog(buffer);
     }    
 }
 
+
+/*
+ * Funktion wertet empfangen Katalog aus und
+ * setzt diesen in der GUI auf aktiv
+ */
 void receiveCatalogChange(PACKET packet){	      
   if (ntohs(packet.header.length) > 0) {
     char buffer[ntohs(packet.header.length)];
@@ -97,6 +111,9 @@ void receiveCatalogChange(PACKET packet){
 }
 
 
+/*
+ * Funktion wertet Fehlernachrichten aus
+ */
 void receiveErrorMessage (PACKET packet){
 	char error_message[MAX_MESSAGE_LENGTH];
 	// hole Errornachricht
@@ -117,12 +134,15 @@ void receiveErrorMessage (PACKET packet){
 }
 
 
+/*
+ * Funktion fordert eine neue Frage vom Server an
+ */
 void questionRequest(int socketDeskriptor){
 	PACKET packet;
 	packet.header.type = RFC_QUESTIONREQUEST;
 	packet.header.length = 0;
 	sendPacket(packet, socketDeskriptor);
-	printf("Question Request gesendet!\n");
+	infoPrint("Question Request gesendet!");
 }
 
 
@@ -133,10 +153,10 @@ void *listener_main(int * sockD){
 
     // RFC_LOGINRESPONSEOK
     if(response.header.type == RFC_LOGINRESPONSEOK){
-        infoPrint("Login Response ok\n");
+        infoPrint("Login Response ok");
         clientID = response.content.loginresponseok.clientid;
 
-        // RFC_CATALOGREQUEST - get catalog list
+        infoPrint("Fordere verfuegbare Kataloge an");
         catalogRequest();
     }
 	// RFC_ERRORWARNING
@@ -223,8 +243,8 @@ void *listener_main(int * sockD){
 				game_setControlsEnabled(0);
 
 				if (ntohs(packet.header.length) > 0) {
-					infoPrint("Korrekte Antwort: %i\n", packet.content.questionresult.correct);
-					infoPrint("Spiler Antowrt: %i\n", packet.content.questionresult.timeout);
+					infoPrint("Korrekte Antwort: %i", packet.content.questionresult.correct);
+					infoPrint("Spieler Antowrt: %i", packet.content.questionresult.timeout);
 					for (int i = 0; i < NUM_ANSWERS; i++) {
 						if (packet.content.questionresult.correct & (1 << i)) {
 							game_markAnswerCorrect(i);

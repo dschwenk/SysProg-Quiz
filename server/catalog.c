@@ -45,7 +45,7 @@ char* shmem;
  */
 int addCatalog(char* name, int i){
 	// pruefe ob Katalognamen 'gueltig'
-	debugPrint("pruefe Katalognamen\n.");
+	debugPrint("pruefe Katalognamen");
 	if((name == NULL) || (strlen(name) == 0 || name == "\n")){
 		return -1;
 	}
@@ -55,7 +55,7 @@ int addCatalog(char* name, int i){
 	if(i > catalog_count){
 		catalog_count = i;
 	}
-	debugPrint("Katalog hinzugefuegt.\n");
+	debugPrint("Katalog hinzugefuegt");
 	return 0;
 }
 
