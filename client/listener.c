@@ -28,6 +28,7 @@
 
 int clientID;
 bool game_is_running = false;
+char msg[50];
 
 
 /*
@@ -221,7 +222,6 @@ void *listener_main(int * sockD){
 		else if (isStringEqual(packet.header, "QUE")) {
 			infoPrint("Frage erhalten");
 
-			char msg[50];
 			if (packet.header.length != 0) {
 				game_clearAnswerMarksAndHighlights();
 				game_setQuestion(packet.content.question.question);
