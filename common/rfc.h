@@ -12,11 +12,6 @@
 
 #include "common/question.h"
 
-
-// Funktion prueft ob der Typ im Header dem uebergeben String entspricht
-// gibt bei Uebereinstimmung 1 zurueck falls nicht 0
-int isStringEqual(struct HEADER m, const char *s);
-
 // maximale Anzahl an Spielern
 #define MAX_PLAYERS	4
 
@@ -123,6 +118,11 @@ typedef struct{
 } PACKET;
 
 #pragma pack(pop)
+
+
+// Funktion prueft ob der Typ im Header dem uebergeben String entspricht
+// gibt bei Uebereinstimmung 1 zurueck falls nicht 0
+int isStringEqual(HEADER, const char *s);
 
 
 #endif
