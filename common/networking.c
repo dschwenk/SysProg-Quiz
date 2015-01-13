@@ -34,13 +34,14 @@
  */
 void sendPacket(PACKET packet, int socketDeskriptor){
 	// sende Daten ueber Socket
-	if(send(socketDeskriptor, &packet, ntohs(packet.header.length)+3,0) == -1){
+	//if(send(socketDeskriptor, &packet, ntohs(packet.header.length)+3,0) == -1){
+	if(send(socketDeskriptor, &packet, ntohs(packet.header.length)+sizeof(HEADER),0) == -1){
 		errorPrint("Senden der Daten fehlgeschlagen!");
 		exit(0);
 	}
 	else {
 		// Testweise ausgeben welcher Typ an welchen Socket versendet wurde
-		infoPrint("Nachicht vom Type %i%i%i an die Socket-ID: %i gesendet", packet.header.type[0], packet.header.type[1], packet.header.type[2], socketDeskriptor);
+		infoPrint("Nachicht vom Type %c%c%c an die Socket-ID: %i gesendet", packet.header.type[0], packet.header.type[1], packet.header.type[2], socketDeskriptor);
 	}
 
 }
@@ -70,6 +71,7 @@ PACKET recvPacket (int socketDeskriptor){
 		packet.header.length = htons(3 + strlen(error_message) + 1);
 		return packet;
 	}
+	// debugPrint("Nachicht vom Type %c%c%c empfangen", packet.header.type[0], packet.header.type[1], packet.header.type[2]);
 	// empfange Content
 	if(htons(packet.header.length)){
 		// stimmt die Anzahl an empfangen Daten mit der Groesenangabe im Paket ueberrein?

@@ -227,9 +227,9 @@ void *client_thread_main(int* client_id){
 				if(time_left == -1){
 					PACKET QuestionAnswer;
 					// QuestionResult - Auswertung einer Antwort auf eine Quiz-Frage
-					question_packet.header.type[0] = 'Q';
-					question_packet.header.type[1] = 'R';
-					question_packet.header.type[2] = 'E';
+					QuestionAnswer.header.type[0] = 'Q';
+					QuestionAnswer.header.type[1] = 'R';
+					QuestionAnswer.header.type[2] = 'E';
 					QuestionAnswer.header.length = htons(2);
 					QuestionAnswer.content.questionresult.correct = correct;
 					QuestionAnswer.content.questionresult.timeout = 1;
@@ -258,9 +258,9 @@ void *client_thread_main(int* client_id){
 					}
 					PACKET QuestionAnswer;
 					// QuestionResult - Auswertung einer Antwort auf eine Quiz-Frage
-					question_packet.header.type[0] = 'Q';
-					question_packet.header.type[1] = 'R';
-					question_packet.header.type[2] = 'E';
+					QuestionAnswer.header.type[0] = 'Q';
+					QuestionAnswer.header.type[1] = 'R';
+					QuestionAnswer.header.type[2] = 'E';
 					QuestionAnswer.header.length = htons(2);
 					QuestionAnswer.content.questionresult.correct = correct;
 					QuestionAnswer.content.questionresult.timeout = 0;

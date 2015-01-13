@@ -18,33 +18,9 @@
 // RFC Version WS 14/15
 #define RFC_VERSION 6
 
-/*
-// Uebersicht über die Nachrichtentypen
-#define RFC_LOGINREQUEST         1 // Anmeldung eines Clients am Server
-#define RFC_LOGINRESPONSEOK      2 // Anmeldung am Server erfolgreich
-#define RFC_CATALOGREQUEST       3 // Anforderung der Liste der Fragakata-loge durch den Client
-#define RFC_CATALOGRESPONSE      4 // Name eines Fragekatalogs (mehrere Nachrichten dieses Typs ergeben die vollständige Liste)
-#define RFC_CATALOGCHANGE        5 // Spielleiter hat Katalogauswahl geaendert, wird an alle Clients weitergeleitet
-#define RFC_PLAYERLIST           6 // Liste der Spielteilnehmer, wird versendet bei: An-/Abmeldung, Spielstart und Aenderung des Punktestandes
-#define RFC_STARTGAME            7 // Spielleiter möchte Spiel starten, wird vom Server ausgewertet und an Clients weitergeleitet
-#define RFC_QUESTIONREQUEST      8 // Anforderung einer Quizfrage durch einen Client
-#define RFC_QUESTION             9 // Reaktion auf QuestionRequest: Transport einer Quiz-Frage zum Client
-#define RFC_QUESTIONANSWERED     10 // Quiz-Frage wurde beantwortet
-#define RFC_QUESTIONRESULT       11 // Auswertung einer Antwort auf eine Quiz-Frage
-#define RFC_GAMEOVER             12 // Alle Clients sind fertig, Mitteilung ueber Endplatzierung
-#define RFC_ERRORWARNING         255 // Fehlermeldung
-*/
-
 #define ERR_WARNING 0
 #define ERR_FATAL 1
 
-// selbst definierte Warnung-/Fehlertypen + Konstanten ('ersetzen ERR_WARNUNG / FATAL)
-#define ERR_MAXCOUNTPLAYERREACHED 101
-#define ERR_PLAYERNAMEEXIST 102
-#define ERR_GAMEISRUNNING 103
-#define ERR_SPIELLEITERLEFTGAME 104
-#define ERR_TOOFEWPLAERS 105
-#define ERR_CLIENTLEFTGAME 107
 
 // max. Laenge Spielername (inkl. '\0')
 #define PLAYER_NAME_LENGTH 32
@@ -60,8 +36,8 @@
 
 // LoginRequest
 typedef struct {
-	uint8_t RFCVersion;
 	char playername[PLAYER_NAME_LENGTH];
+	uint8_t RFCVersion;
 } LOGINREQUEST;
 
 // LoginResponseOK
@@ -106,7 +82,7 @@ typedef union {
 
 // Header
 typedef struct {
-	char type[3];
+	uint8_t type[3];
 	uint16_t length;
 } HEADER;
 
@@ -120,9 +96,19 @@ typedef struct{
 #pragma pack(pop)
 
 
+
 // Funktion prueft ob der Typ im Header dem uebergeben String entspricht
 // gibt bei Uebereinstimmung 1 zurueck falls nicht 0
 int isStringEqual(HEADER, const char *s);
 
+
+
+// selbst definierte Warnung-/Fehlertypen + Konstanten ('ersetzen ERR_WARNUNG / FATAL)
+#define ERR_MAXCOUNTPLAYERREACHED 101
+#define ERR_PLAYERNAMEEXIST 102
+#define ERR_GAMEISRUNNING 103
+#define ERR_SPIELLEITERLEFTGAME 104
+#define ERR_TOOFEWPLAERS 105
+#define ERR_CLIENTLEFTGAME 107
 
 #endif

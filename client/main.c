@@ -80,8 +80,10 @@ void loginRequest(char* name) {
 	packet.header.type[1] = 'R';
 	packet.header.type[2] = 'Q';
 
+	//packet.header.length = htons(sizeof(LOGINREQUEST));
 	//packet.header.length = htons(sizeof(name));
 	packet.header.length = htons(strlen(name)+1);
+	//packet.header.length = htons(strlen(name));
 	strncpy(packet.content.loginrequest.playername, name, ntohs(packet.header.length));
 	packet.content.loginrequest.RFCVersion = RFC_VERSION;
 	// sende Nachricht
@@ -291,7 +293,8 @@ void game_onSubmitClicked(unsigned char selectedAnswers)
 	packet.header.type[1] = 'A';
 	packet.header.type[2] = 'N';
 
-	packet.header.length = htons(sizeof(uint8_t));
+	packet.header.length = htons(1);
+	//packet.header.length = htons(sizeof(uint8_t));
 	packet.content.selection = (uint8_t) selection;
 	sendPacket(packet, socketDeskriptor);
 }
