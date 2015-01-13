@@ -219,7 +219,9 @@ void endServer(){
 	debugPrint("Sende Nachricht an Clients: Server wird beendet.");
 	if(countUser() > 0){
 		PACKET close_server_packet;
-		close_server_packet.header.type = RFC_ERRORWARNING;
+		close_server_packet.header.type[0] = 'E';
+		close_server_packet.header.type[1] = 'R';
+		close_server_packet.header.type[2] = 'R';
 		close_server_packet.header.length = htons(sizeof(ERROR));
 		//close_server_packet.content.error.errortype = ERR_SERVER_CLOSE;
 		close_server_packet.content.error.errortype = ERR_FATAL;

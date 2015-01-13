@@ -13,8 +13,9 @@
 #include "common/question.h"
 
 
-// Returns 1 if equal, 0 if not
-int equalLiteral(struct rfcMain m, const char *s);
+// Funktion prueft ob der Typ im Header dem uebergeben String entspricht
+// gibt bei Uebereinstimmung 1 zurueck falls nicht 0
+int isStringEqual(struct rfcMain m, const char *s);
 
 // maximale Anzahl an Spielern
 #define MAX_PLAYERS	4
@@ -22,7 +23,7 @@ int equalLiteral(struct rfcMain m, const char *s);
 // RFC Version WS 14/15
 #define RFC_VERSION 6
 
-
+/*
 // Uebersicht über die Nachrichtentypen
 #define RFC_LOGINREQUEST         1 // Anmeldung eines Clients am Server
 #define RFC_LOGINRESPONSEOK      2 // Anmeldung am Server erfolgreich
@@ -37,6 +38,7 @@ int equalLiteral(struct rfcMain m, const char *s);
 #define RFC_QUESTIONRESULT       11 // Auswertung einer Antwort auf eine Quiz-Frage
 #define RFC_GAMEOVER             12 // Alle Clients sind fertig, Mitteilung ueber Endplatzierung
 #define RFC_ERRORWARNING         255 // Fehlermeldung
+*/
 
 #define ERR_WARNING 0
 #define ERR_FATAL 1
@@ -51,7 +53,7 @@ int equalLiteral(struct rfcMain m, const char *s);
 
 // max. Laenge Spielername (inkl. '\0')
 #define PLAYER_NAME_LENGTH 32
-// max. Laenge Katalogname (inkl. '\0')
+// max. Laenge Katalogname
 #define CATALOG_NAME_LENGTH 31
 // define max. Messagelength (inkl. '\0')
 #define MAX_MESSAGE_LENGTH 100

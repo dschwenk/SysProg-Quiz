@@ -62,7 +62,9 @@ PACKET recvPacket (int socketDeskriptor){
 		// gebe Fehlerpaket zurueck
 		// setzte Header + Errortype + Fehlernachricht
 		char error_message[] = "Fehlerhafte uebertragung der Daten, Verbindung unterbrochen!";
-		packet.header.type = RFC_ERRORWARNING;
+		packet.header.type[0] = 'E';
+		packet.header.type[1] = 'R';
+		packet.header.type[2] = 'R';
 		packet.content.error.errortype = ERR_FATAL;
 		strcpy(packet.content.error.errormessage, error_message);
 		packet.header.length = htons(3 + strlen(error_message) + 1);
@@ -76,7 +78,9 @@ PACKET recvPacket (int socketDeskriptor){
 			// gebe Fehlerpaket  zurueck
 			// setzte Header + Errortype + Fehlernachricht
 			char error_message[] = "Fehlerhaftes Datenpacket";
-			packet.header.type = RFC_ERRORWARNING;
+			packet.header.type[0] = 'E';
+			packet.header.type[1] = 'R';
+			packet.header.type[2] = 'R';
 			packet.content.error.errortype = ERR_FATAL;
 			strcpy(packet.content.error.errormessage, error_message);
 			packet.header.length = htons(3 + strlen(error_message) + 1);

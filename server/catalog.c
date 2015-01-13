@@ -67,7 +67,9 @@ int addCatalog(char* name, int i){
  */
 void sendCatalog(int client_socket){
 	PACKET packet;
-	packet.header.type = RFC_CATALOGRESPONSE;
+	packet.header.type[0] = 'C';
+	packet.header.type[1] = 'R';
+	packet.header.type[2] = 'E';
 	// gehe alle verfuegbaren Kataloge durch
 	for(int i=0;i<= catalog_count;i++){
 		// konvertiere Werte von host byte order zu network byte order
@@ -77,7 +79,7 @@ void sendCatalog(int client_socket){
 		debugPrint("Sende Katalog an Client.");
 		sendPacket(packet, client_socket);
 	}
-	// sende zum Abschluss einen leeren RFC_CATALOGRESPONSE --> alle Kataloge uebertragen
+	// sende zum Abschluss einen leeren CATALOGRESPONSE --> alle Kataloge uebertragen
 	debugPrint("Sende leeres Katalogpacket zum Abschluss an Client.");
 	packet.header.length = htons(0);
 	strncpy(packet.content.catalogname, "", sizeof(""));

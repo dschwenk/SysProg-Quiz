@@ -55,7 +55,9 @@ void *client_thread_main(int* client_id){
 	while(1){
 		// Fehlerbehandlung falls bei letzter Frage ein Zeitfehler auftrat
 		if(time_error){
-			packet.header.type = RFC_ERRORWARNING;
+			packet.header.type[0] = 'E';
+			packet.header.type[1] = 'R';
+			packet.header.type[2] = 'R';
 			time_error = false;
 		}
 		// empfange
@@ -65,22 +67,47 @@ void *client_thread_main(int* client_id){
         infoPrint("clientthread packet: %d", packet.header.type);
 
 		// werte empfangenes Paket aus
-		switch(packet.header.type){
-			// Fehlernachricht empfangen - RFC_ERRORWARNING
-			case RFC_ERRORWARNING:
-				// pruefe Subtyp
-				// Spieler hat das Spiel verlassen
-				if(packet.content.error.errortype == ERR_CLIENTLEFTGAME){
-					debugPrint("Spieler %s (ID: %d) hat das Spiel verlassen", spieler.name, spieler.id);
-					// pruefe ob Spielleiter
-					if(is_spielleiter){
-						debugPrint("Spieler %s (ID: %d) war Spielleiter", spieler.name, spieler.id);
-						infoPrint("Der Spieleiter hat das Spiel verlassen, der Server wird beendet");
-						// setzte Fehlertyp + Text
-						response.header.type = RFC_ERRORWARNING;
-						response.header.length = htons(strlen("Der Spieleiter hat das Spiel verlassen, der Server wird beendet!"));
-						response.content.error.errortype = ERR_SPIELLEITERLEFTGAME;
-						strncpy(response.content.error.errormessage,"Der Spieleiter hat das Spiel verlassen, der Server wird beendet!",	ntohs(response.header.length));
+
+		// ERR - Fehlernachricht empfangen
+		if(isStringEqual(packet.header, "ERR")){
+			// pruefe Subtyp
+			// Spieler hat das Spiel verlassen
+			if(packet.content.error.errortype == ERR_CLIENTLEFTGAME){
+				debugPrint("Spieler %s (ID: %d) hat das Spiel verlassen", spieler.name, spieler.id);
+				// pruefe ob Spielleiter
+				if(is_spielleiter){
+					debugPrint("Spieler %s (ID: %d) war Spielleiter", spieler.name, spieler.id);
+					infoPrint("Der Spieleiter hat das Spiel verlassen, der Server wird beendet");
+					// setzte Fehlertyp + Text
+					packet.header.type[0] = 'E';
+					packet.header.type[1] = 'R';
+					packet.header.type[2] = 'R';
+					response.header.length = htons(strlen("Der Spieleiter hat das Spiel verlassen, der Server wird beendet!"));
+					response.content.error.errortype = ERR_SPIELLEITERLEFTGAME;
+					strncpy(response.content.error.errormessage,"Der Spieleiter hat das Spiel verlassen, der Server wird beendet!",	ntohs(response.header.length));
+					// sende Fehlermeldung an alle
+					lock_user_mutex();
+					sendToAll(response);
+					unlock_user_mutex();
+					// Server beenden
+					endServer();
+				}
+				// Spieler war kein Spieleiter
+				else {
+					debugPrint("Spieler %s (ID: %d) war NICHT Spielleiter", spieler.name, spieler.id);
+					// entferne Spieler aus verwaltung
+					lock_user_mutex();
+					removePlayer(spieler.id);
+					unlock_user_mutex();
+					// pruefe ob Spiel bereits laeft und Anzahl verbliebener Spieler
+					if((getGameRunning()) && (countUser() <= 2)){
+						// zu wenig Spieler
+						packet.header.type[0] = 'E';
+						packet.header.type[1] = 'R';
+						packet.header.type[2] = 'R';
+						response.header.length = htons(strlen("Zu wenig Spieler, breche Spiel ab."));
+						response.content.error.errortype = ERR_TOOFEWPLAERS;
+						strncpy(response.content.error.errormessage,"Zu wenig Spieler, breche Spiel ab.",ntohs(response.header.length));
 						// sende Fehlermeldung an alle
 						lock_user_mutex();
 						sendToAll(response);
@@ -88,186 +115,177 @@ void *client_thread_main(int* client_id){
 						// Server beenden
 						endServer();
 					}
-					// Spieler war kein Spieleiter
-					else {
-						debugPrint("Spieler %s (ID: %d) war NICHT Spielleiter", spieler.name, spieler.id);
-						// entferne Spieler aus verwaltung
+					// sende aktualisierte Spielerliste an alle verbliebene Spieler
+					// sendPlayerList();
+					sem_post(&semaphor_score);
+				}
+			}
+			else {
+				lock_user_mutex();
+				removePlayer(spieler.id);
+				unlock_user_mutex();
+				if(getGameRunning()){
+					sendGameOver(0);
+				}
+			}
+			// beende Thread
+			pthread_exit(0);
+			return NULL;
+		}
+
+		// CRQ - Anforderung der Liste der Fragekataloge
+		else if(isStringEqual(packet.header, "CRQ")){
+			debugPrint("Catalog Request von Spieler-ID: %i Name: %s", spieler.id, spieler.name);
+			lock_user_mutex();
+			sendCatalog(spieler.sockDesc);
+			unlock_user_mutex();
+			// pruefe ob Katalog ausgewaehlt wurde - falls ja sende Katalog
+			if(isCatalogChosen()){
+				// Client erkennt somit den vom Spielleiter ausgewaehlten Katalog
+				sendCatalogChange();
+			}
+		}
+
+		// CCH - Spielleiter hat Katalogauswahl geaendert
+		else if(isStringEqual(packet.header, "CCH")){
+			debugPrint("Catalog Change von Spieler-ID: %i Name: %s", spieler.id, spieler.name);
+			// setzte aktiven Katalog
+			lock_user_mutex();
+			setActiveCatalog(packet);
+			unlock_user_mutex();
+			// sende Katalogwechsel an alle Spieler
+			sendCatalogChange();
+		}
+
+		// STG - Spielleiter moechte Spiel starten
+		else if(isStringEqual(packet.header, "STG")){
+			// pruefe Anzahl angemelder Spieler - >= 2 Spieler zum Spielstart benoetigt
+			// zu wenig Spieler - Spiel wird nicht gestartet
+			if(countUser() < 2){
+				infoPrint("Zu wenige Spieler um das Spiel zu starten!");
+				packet.header.type[0] = 'E';
+				packet.header.type[1] = 'R';
+				packet.header.type[2] = 'R';
+				response.header.length = htons(strlen("Zu wenige Spieler um das Spiel zu starten!"));
+				response.content.error.errortype = ERR_TOOFEWPLAERS;
+				strncpy(response.content.error.errormessage,"Zu wenige Spieler um das Spiel zu starten!", ntohs(response.header.length));
+				sendPacket(response, spieler.sockDesc);
+			}
+			// genug Spieler - Spiel wird gestartet
+			else {
+				setGameRunning();
+				char catalog[CATALOG_NAME_LENGTH];
+
+				// lade Fragen des aktiven Katalogs
+				strncpy(catalog, packet.content.catalogname,ntohs(packet.header.length));
+				catalog[ntohs(packet.header.length)] = '\0';
+				loadQuestions(catalog);
+
+				// sende Paket mit aktuellem Katalog an alle Spieler
+				lock_user_mutex();
+				sendToAll(packet);
+				unlock_user_mutex();
+			}
+		}
+
+		// QRQ - Anforderung einer Quizfrage
+		else if(isStringEqual(packet.header, "QRQ")){
+			// lade naechste Frage
+			shmQ = getQuestion(question_number);
+			question_number++;
+			PACKET question_packet;
+			// gibt es noch eine Frage
+			if(strcmp(shmQ->question, "") != 0){
+				// Bitmaske für richtige Antworten
+				correct = shmQ->correct;
+
+				question_packet.header.type[0] = 'Q';
+				question_packet.header.type[1] = 'U';
+				question_packet.header.type[2] = 'E';
+				question_packet.header.length = htons(sizeof(QuestionMessage));
+				QuestionMessage quest_message;
+
+				// kopiere Frage + Antworten + Timeout
+				strcpy(quest_message.question, shmQ->question);
+				strcpy(quest_message.answers[0], shmQ->answers[0]);
+				strcpy(quest_message.answers[1], shmQ->answers[1]);
+				strcpy(quest_message.answers[2], shmQ->answers[2]);
+				strcpy(quest_message.answers[3], shmQ->answers[3]);
+				quest_message.timeout = shmQ->timeout;
+
+				// versende Fragenpaket + aktualisierte Spielerliste
+				question_packet.content.question = quest_message;
+				sendPacket(question_packet, spieler.sockDesc);
+				lock_user_mutex();
+				sendPlayerList();
+				unlock_user_mutex();
+
+				// warte auf Clientantwort
+				time_left = questionTimer(&selection, shmQ->timeout, spieler.sockDesc);
+
+				// werte Restzeit aus - Zeit abgelaufen
+				if(time_left == -1){
+					PACKET QuestionAnswer;
+					// QuestionResult - Auswertung einer Antwort auf eine Quiz-Frage
+					question_packet.header.type[0] = 'Q';
+					question_packet.header.type[1] = 'R';
+					question_packet.header.type[2] = 'E';
+					QuestionAnswer.header.length = htons(2);
+					QuestionAnswer.content.questionresult.correct = correct;
+					QuestionAnswer.content.questionresult.timeout = 1;
+					sendPacket(QuestionAnswer, spieler.sockDesc);
+					infoPrint("Antwort auf Frage gesendet!");
+					// The sem_post() function unlocks the semaphore referenced by sem by performing a semaphore unlock operation on that semaphore.
+					sem_post(&semaphor_score);
+				}
+				// es ist noch Restzeit vorhanden
+				else if(time_left != 0){
+					infoPrint("Gewaehlte Antwort: %d", selection);
+					// ist die Antwort korrekt
+					if(selection == correct){
+						infoPrint("Restzeit: %i", time_left);
+						// berechne Punktzahl (siehe Aufgabenblatt 6)
+						unsigned long score = (time_left * 1000UL) / (shmQ->timeout * 1000UL);
+						/* auf 10 er - Stellen runden */
+						score = ((score + 5UL) / 10UL) * 10UL;
+						infoPrint("Erreichte Punktzahl: %lu", score);
+						// Punkte in Benutzerverwaltung speichern
 						lock_user_mutex();
-						removePlayer(spieler.id);
+						setUserScore(spieler.id, score);
 						unlock_user_mutex();
-						// pruefe ob Spiel bereits laeft und Anzahl verbliebener Spieler
-						if((getGameRunning()) && (countUser() <= 2)){
-							// zu wenig Spieler
-							response.header.type = RFC_ERRORWARNING;
-							response.header.length = htons(strlen("Zu wenig Spieler, breche Spiel ab."));
-							response.content.error.errortype = ERR_TOOFEWPLAERS;
-							strncpy(response.content.error.errormessage,"Zu wenig Spieler, breche Spiel ab.",ntohs(response.header.length));
-							// sende Fehlermeldung an alle
-							lock_user_mutex();
-							sendToAll(response);
-							unlock_user_mutex();
-							// Server beenden
-							endServer();
-						}
-						// sende aktualisierte Spielerliste an alle verbliebene Spieler
-						// sendPlayerList();
+						// The sem_post() function unlocks the semaphore referenced by sem by performing a semaphore unlock operation on that semaphore.
 						sem_post(&semaphor_score);
 					}
+					PACKET QuestionAnswer;
+					// QuestionResult - Auswertung einer Antwort auf eine Quiz-Frage
+					question_packet.header.type[0] = 'Q';
+					question_packet.header.type[1] = 'R';
+					question_packet.header.type[2] = 'E';
+					QuestionAnswer.header.length = htons(2);
+					QuestionAnswer.content.questionresult.correct = correct;
+					QuestionAnswer.content.questionresult.timeout = 0;
+					sendPacket(QuestionAnswer, spieler.sockDesc);
+					infoPrint("Antwort gesendet!");
 				}
+				// Fehler
 				else {
-					lock_user_mutex();
-					removePlayer(spieler.id);
-					unlock_user_mutex();
-					if(getGameRunning()){
-						sendGameOver(0);
-					}
+					time_error = true;
 				}
-				// beende Thread
-				pthread_exit(0);
-				return NULL;
-
-				// Client hat Kataloge angefagt - RFC_CATALOGREQUEST
-				case RFC_CATALOGREQUEST:
-					debugPrint("Catalog Request von Spieler-ID: %i Name: %s", spieler.id, spieler.name);
-					lock_user_mutex();
-					sendCatalog(spieler.sockDesc);
-					unlock_user_mutex();
-					// pruefe ob Katalog ausgewaehlt wurde - falls ja sende Katalog
-					if(isCatalogChosen()){
-						// Client erkennt somit den vom Spielleiter ausgewaehlten Katalog
-						sendCatalogChange();
-					}
-					break;
-
-				// Client hat Katalog gewechselt
-				case RFC_CATALOGCHANGE:
-					debugPrint("Catalog Change von Spieler-ID: %i Name: %s", spieler.id, spieler.name);
-					// setzte aktiven Katalog
-					lock_user_mutex();
-					setActiveCatalog(packet);
-					unlock_user_mutex();
-					// sende Katalogwechsel an alle Spieler
-					sendCatalogChange();
-					break;
-
-				// Spielleiter moechte Spiel starten
-				case RFC_STARTGAME:
-					// pruefe Anzahl angemelder Spieler - >= 2 Spieler zum Spielstart benoetigt
-					// zu wenig Spieler - Spiel wird nicht gestartet
-					if(countUser() < 2){
-						infoPrint("Zu wenige Spieler um das Spiel zu starten!");
-						response.header.type = RFC_ERRORWARNING;
-						response.header.length = htons(strlen("Zu wenige Spieler um das Spiel zu starten!"));
-						response.content.error.errortype = ERR_TOOFEWPLAERS;
-						strncpy(response.content.error.errormessage,"Zu wenige Spieler um das Spiel zu starten!", ntohs(response.header.length));
-						sendPacket(response, spieler.sockDesc);
-					}
-					// genug Spieler - Spiel wird gestartet
-					else {
-						setGameRunning();
-						char catalog[CATALOG_NAME_LENGTH];
-
-						// lade Fragen des aktiven Katalogs
-						strncpy(catalog, packet.content.catalogname,ntohs(packet.header.length));
-						catalog[ntohs(packet.header.length)] = '\0';
-						loadQuestions(catalog);
-
-						// sende Paket mit aktuellem Katalog an alle Spieler
-						lock_user_mutex();
-						sendToAll(packet);
-						unlock_user_mutex();
-					}
-					break;
-
-				// Spieler fordert Frage an
-				case RFC_QUESTIONREQUEST:
-					// lade naechste Frage
-					shmQ = getQuestion(question_number);
-					question_number++;
-					PACKET question_packet;
-					// gibt es noch eine Frage
-					if(strcmp(shmQ->question, "") != 0){
-						// Bitmaske für richtige Antworten
-						correct = shmQ->correct;
-
-						question_packet.header.type = RFC_QUESTION;
-						question_packet.header.length = htons(sizeof(QuestionMessage));
-						QuestionMessage quest_message;
-
-						// kopiere Frage + Antworten + Timeout
-						strcpy(quest_message.question, shmQ->question);
-						strcpy(quest_message.answers[0], shmQ->answers[0]);
-						strcpy(quest_message.answers[1], shmQ->answers[1]);
-						strcpy(quest_message.answers[2], shmQ->answers[2]);
-						strcpy(quest_message.answers[3], shmQ->answers[3]);
-						quest_message.timeout = shmQ->timeout;
-
-						// versende Fragenpaket + aktualisierte Spielerliste
-						question_packet.content.question = quest_message;
-						sendPacket(question_packet, spieler.sockDesc);
-						lock_user_mutex();
-						sendPlayerList();
-						unlock_user_mutex();
-
-						// warte auf Clientantwort
-						time_left = questionTimer(&selection, shmQ->timeout, spieler.sockDesc);
-
-						// werte Restzeit aus - Zeit abgelaufen
-						if(time_left == -1){
-							PACKET QuestionAnswer;
-							QuestionAnswer.header.type = RFC_QUESTIONRESULT;
-							QuestionAnswer.header.length = htons(2);
-							QuestionAnswer.content.questionresult.correct = correct;
-							QuestionAnswer.content.questionresult.timeout = 1;
-							sendPacket(QuestionAnswer, spieler.sockDesc);
-							infoPrint("Antwort auf Frage gesendet!");
-							// The sem_post() function unlocks the semaphore referenced by sem by performing a semaphore unlock operation on that semaphore.
-							sem_post(&semaphor_score);
-						}
-						// es ist noch Restzeit vorhanden
-						else if(time_left != 0){
-							infoPrint("Gewaehlte Antwort: %d", selection);
-							// ist die Antwort korrekt
-							if(selection == correct){
-								infoPrint("Restzeit: %i", time_left);
-								// berechne Punktzahl (siehe Aufgabenblatt 6)
-								unsigned long score = (time_left * 1000UL) / (shmQ->timeout * 1000UL);
-								/* auf 10 er - Stellen runden */
-								score = ((score + 5UL) / 10UL) * 10UL;
-								infoPrint("Erreichte Punktzahl: %lu", score);
-								// Punkte in Benutzerverwaltung speichern
-								lock_user_mutex();
-								setUserScore(spieler.id, score);
-								unlock_user_mutex();
-								// The sem_post() function unlocks the semaphore referenced by sem by performing a semaphore unlock operation on that semaphore.
-								sem_post(&semaphor_score);
-							}
-							PACKET QuestionAnswer;
-							QuestionAnswer.header.type = RFC_QUESTIONRESULT;
-							QuestionAnswer.header.length = htons(2);
-							QuestionAnswer.content.questionresult.correct = correct;
-							QuestionAnswer.content.questionresult.timeout = 0;
-							sendPacket(QuestionAnswer, spieler.sockDesc);
-							infoPrint("Antwort gesendet!");
-						}
-						// Fehler
-						else {
-							time_error = true;
-						}
-					}
-					// keine weiteren Fragen
-					else {
-						question_packet.header.type = RFC_QUESTION;
-						question_packet.header.length = htons(0);
-						sendPacket(question_packet, spieler.sockDesc);
-						sendGameOver(spieler.id);
-					}
-					break;
-
-				// unbekannter Nachrichtentyp
-				default:
-					debugPrint("Unbekannter Nachrichtentyp: %i von Spieler-ID: %i Name: %s", packet.header.type, spieler.id, spieler.name);
-					break;
+			}
+			// keine weiteren Fragen
+			else {
+				// Question - Reaktion auf QuestionRequest, Transport einer Quiz-Frage zum Client
+				question_packet.header.type[0] = 'Q';
+				question_packet.header.type[1] = 'U';
+				question_packet.header.type[2] = 'E';
+				question_packet.header.length = htons(0);
+				sendPacket(question_packet, spieler.sockDesc);
+				sendGameOver(spieler.id);
+			}
+		}
+		// unbekannter Nachrichtentyp
+		else {
+			debugPrint("Unbekannter Nachrichtentyp: %i%i%i von Spieler-ID: %i Name: %s", packet.header.type[0], packet.header.type[1], packet.header.type[2], spieler.id, spieler.name);
 		}
 	}
 	pthread_exit(0);
@@ -312,7 +330,8 @@ int questionTimer(uint8_t* selection, int timeout, int sockD){
 		if(select > 0){
 			// empfange Nachricht
 			packet = recvPacket(sockD);
-			if(packet.header.type == RFC_QUESTIONANSWERED){
+			// QAN - Quiz-Frage wurde beantwortet
+			if(isStringEqual(packet.header, "QAN")) {
 				memcpy(selection, &packet.content.selection, 1);
 			}
 			else {

@@ -124,9 +124,8 @@ int removePlayer(int client_id){
  */
 void sendToAll(PACKET packet) {
 	debugPrint("Sende Paket an alle Spieler.");
-	int current_count_players = countUser();
 	// gehe alle Spieler durch und Sende Nachricht
-	for(int i = 0; i < current_count_players; i++){
+	for(int i = 0; i < countUser(); i++){
 		sendPacket(packet, spieler[i].sockDesc);
 	}
 	return;
@@ -141,7 +140,9 @@ void sendPlayerList(){
 	debugPrint("Spielerliste senden.");
 
 	PACKET packet;
-	packet.header.type = RFC_PLAYERLIST;
+	packet.header.type[0] = 'L';
+	packet.header.type[1] = 'S';
+	packet.header.type[2] = 'T';
 
 	int user_count = countUser();
 	// aktualisiere Spielstand / Rangfolge
@@ -168,7 +169,7 @@ void sendPlayerList(){
 int countUser(){
 	debugPrint("Zaehle aktuell angemeldete Spieler.");
 	int current_user_count = 0;
-	for(int i=0;i< MAX_PLAYERS;i++){
+	for(int i=0;i<MAX_PLAYERS;i++){
 		// Spieler vorhanden - erhoehe Zaehler
 		if((spieler[i].id != -1) && (spieler[i].sockDesc != 0)){
 			current_user_count++;
@@ -222,6 +223,7 @@ void setPlayerRanking(){
  * param int client_id ID des Spielers
  */
 PLAYER getUser(int client_id){
+	// suche Spieler im Spielerverwaltungsarray
 	for(int i = 0; i < MAX_PLAYERS; i++){
 		if(spieler[i].id == client_id){
 			return spieler[i];
@@ -259,7 +261,9 @@ void sendGameOver(int id){
 		// sende an Spieler EndPlatzierung
 		for(int j=0;j<countUser();j++){
 			PACKET packet;
-			packet.header.type = RFC_GAMEOVER;
+			packet.header.type[0] = 'G';
+			packet.header.type[1] = 'O';
+			packet.header.type[2] = 'V';
 			packet.header.length = htons(1);
 			packet.content.playerrank = j + 1;
 			sendPacket(packet, spieler[j].sockDesc);
