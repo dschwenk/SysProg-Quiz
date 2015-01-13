@@ -207,6 +207,7 @@ void *listener_main(int * sockD){
 			case RFC_STARTGAME:
 				infoPrint("Spiel gestartet!");
 				game_is_running = true;
+				// hole Frage
 				questionRequest(*sockD);
 
 				// Vorbereitungsfenster ausblenden und Spielfenster anzeigen
