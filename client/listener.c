@@ -233,6 +233,7 @@ void *listener_main(int * sockD){
 						packet.content.question.timeout);
 				game_setStatusIcon(0);
 				// game_setStatusText(msg);
+			// leere Frage -> Spielende
 			} else if (ntohs(packet.header.length) == 0) {
 				sprintf(msg, "Alle Fragen beantwortet, bitte Warten.\n");
 				game_setStatusText(msg);
@@ -251,6 +252,7 @@ void *listener_main(int * sockD){
 				infoPrint("Korrekte Antwort: %i", packet.content.questionresult.correct);
 				infoPrint("Spieler Antowrt: %i", packet.content.questionresult.timeout);
 				for (int i = 0; i < NUM_ANSWERS; i++) {
+					// 1 = true
 					if (packet.content.questionresult.correct & (1 << i)) {
 						game_markAnswerCorrect(i);
 					} else {
