@@ -190,6 +190,10 @@ void *listener_main(int * sockD){
 	int stop = 0;
 	while(stop == 0){
 		PACKET packet = recvPacket(*sockD);
+		if(equalLiteral(packet.header, "CRE")) {
+
+		}
+
 		switch (packet.header.type){
             // RFC_CATALOGRESPONSE
             case RFC_CATALOGRESPONSE:
@@ -207,7 +211,6 @@ void *listener_main(int * sockD){
 			case RFC_STARTGAME:
 				infoPrint("Spiel gestartet!");
 				game_is_running = true;
-				// hole Frage
 				questionRequest(*sockD);
 
 				// Vorbereitungsfenster ausblenden und Spielfenster anzeigen

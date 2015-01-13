@@ -12,6 +12,10 @@
 
 #include "common/question.h"
 
+
+// Returns 1 if equal, 0 if not
+int equalLiteral(struct rfcMain m, const char *s);
+
 // maximale Anzahl an Spielern
 #define MAX_PLAYERS	4
 
@@ -105,7 +109,7 @@ typedef union {
 
 // Header
 typedef struct {
-	uint8_t type;
+	char type[3];
 	uint16_t length;
 } HEADER;
 
