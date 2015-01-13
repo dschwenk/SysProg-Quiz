@@ -139,7 +139,11 @@ void receiveErrorMessage (PACKET packet){
  */
 void questionRequest(int socketDeskriptor){
 	PACKET packet;
-	packet.header.type = RFC_QUESTIONREQUEST;
+
+	packet.header.type[0] = 'Q';
+	packet.header.type[1] = 'R';
+	packet.header.type[2] = 'Q';
+
 	packet.header.length = 0;
 	sendPacket(packet, socketDeskriptor);
 	infoPrint("Question Request gesendet!");
@@ -151,16 +155,16 @@ void *listener_main(int * sockD){
     // warte auf Antwort des Servers
     PACKET response = recvPacket(*sockD);
 
-    // RFC_LOGINRESPONSEOK
-    if(response.header.type == RFC_LOGINRESPONSEOK){
+    // LoginResponseOK
+    if(isStringEqual(response.header, "LOK")){
         infoPrint("Login Response ok");
         clientID = response.content.loginresponseok.clientid;
 
         infoPrint("Fordere verfuegbare Kataloge an");
         catalogRequest();
     }
-	// RFC_ERRORWARNING
-    else if(response.header.type == RFC_ERRORWARNING){
+	// ErrorWarning
+    else if(isStringEqual(response.header, "ERR")){
         char message[(ntohs(response.header.length))];
         strncpy(message, response.content.error.errormessage,ntohs(response.header.length) - 1);
         // Nullterminierung
@@ -190,101 +194,96 @@ void *listener_main(int * sockD){
 	int stop = 0;
 	while(stop == 0){
 		PACKET packet = recvPacket(*sockD);
-		if(equalLiteral(packet.header, "CRE")) {
 
+		// CatalogResponse
+		if(isStringEqual(packet.header, "CRE")) {
+			receiveCatalogList(packet);
+		}
+		// CatalogChange
+		else if (isStringEqual(packet.header, "CCH")) {
+			receiveCatalogChange(packet);
+		}
+		// PlayerList
+		else if (isStringEqual(packet.header, "LST")) {
+			receivePlayerlist(packet);
+		}
+		// StartGame
+		else if (isStringEqual(packet.header, "STG")) {
+			infoPrint("Spiel gestartet!");
+			game_is_running = true;
+			questionRequest(*sockD);
+
+			// Vorbereitungsfenster ausblenden und Spielfenster anzeigen
+			game_showWindow();
+			preparation_hideWindow();
+		}
+		// Question
+		else if (isStringEqual(packet.header, "QUE")) {
+			infoPrint("Frage erhalten");
+
+			char msg[50];
+			if (packet.header.length != 0) {
+				game_clearAnswerMarksAndHighlights();
+				game_setQuestion(packet.content.question.question);
+				for (int i = 0; i <= 3; i++) {
+					game_setAnswer(i, packet.content.question.answers[i]);
+				}
+				game_setControlsEnabled(1);
+				sprintf(msg, "Sie haben %i Sekunden Zeit\n",
+						packet.content.question.timeout);
+				game_setStatusIcon(0);
+				// game_setStatusText(msg);
+			} else if (ntohs(packet.header.length) == 0) {
+				sprintf(msg, "Alle Fragen beantwortet, bitte Warten.\n");
+				game_setStatusText(msg);
+				game_setStatusIcon(0);
+			}
+
+			game_setStatusText(msg);
+		}
+		// QuestionResult
+		else if (isStringEqual(packet.header, "QRE")) {
+			infoPrint("Frageauswertung erhalten!");
+
+			game_setControlsEnabled(0);
+
+			if (ntohs(packet.header.length) > 0) {
+				infoPrint("Korrekte Antwort: %i", packet.content.questionresult.correct);
+				infoPrint("Spieler Antowrt: %i", packet.content.questionresult.timeout);
+				for (int i = 0; i < NUM_ANSWERS; i++) {
+					if (packet.content.questionresult.correct & (1 << i)) {
+						game_markAnswerCorrect(i);
+					} else {
+						game_markAnswerWrong(i);
+					}
+				}
+
+				if (packet.content.questionresult.timeout != 0) {
+					game_setStatusText("Zeit vorbei");
+					game_setStatusIcon(3);
+				} else if (selection != packet.content.questionresult.correct) {
+					game_setStatusText("Falsch");
+					game_setStatusIcon(2);
+				} else {
+					game_setStatusText("Richtige Antwort!");
+					game_setStatusIcon(1);
+				}
+				sem_post(&frage); //fragesemaphor aufrufen
+			}
+		}
+		// GameOver
+		else if (isStringEqual(packet.header, "GOV")) {
+			sprintf(msg, "Glückwunsch, Sie wurden %i.\n", packet.content.playerrank);
+			guiShowMessageDialog(msg, 1); //1=gui main geht nach Bestätigen zum Aufrufer zurück
+
+			pthread_exit(0);
+			return NULL;
+		}
+		// ErrorWarning
+		else if (isStringEqual(packet.header, "ERR")) {
+			receiveErrorMessage(packet);
 		}
 
-		switch (packet.header.type){
-            // RFC_CATALOGRESPONSE
-            case RFC_CATALOGRESPONSE:
-                receiveCatalogList(packet);
-                break;
-            // RFC_CATALOGCHANGE
-            case RFC_CATALOGCHANGE:
-                receiveCatalogChange(packet);
-                break;
-			// RFC_PLAYERLIST
-			case RFC_PLAYERLIST:
-				receivePlayerlist(packet);
-				break;
-			// RFC_STARTGAME
-			case RFC_STARTGAME:
-				infoPrint("Spiel gestartet!");
-				game_is_running = true;
-				questionRequest(*sockD);
-
-				// Vorbereitungsfenster ausblenden und Spielfenster anzeigen
-				game_showWindow();
-				preparation_hideWindow();
-				break;
-
-			case RFC_QUESTION:
-				infoPrint("Frage erhalten");
-
-				char msg[50];
-				if (packet.header.length != 0) {
-					game_clearAnswerMarksAndHighlights();
-					game_setQuestion(packet.content.question.question);
-					for (int i = 0; i <= 3; i++) {
-						game_setAnswer(i, packet.content.question.answers[i]);
-					}
-					game_setControlsEnabled(1);
-					sprintf(msg, "Sie haben %i Sekunden Zeit\n",
-							packet.content.question.timeout);
-					game_setStatusIcon(0);
-					// game_setStatusText(msg);
-				} else if (ntohs(packet.header.length) == 0) {
-					sprintf(msg, "Alle Fragen beantwortet, bitte Warten.\n");
-					game_setStatusText(msg);
-					game_setStatusIcon(0);
-				}
-
-				game_setStatusText(msg);
-				break;
-			case RFC_QUESTIONRESULT:
-				infoPrint("Frageauswertung erhalten!");
-
-				game_setControlsEnabled(0);
-
-				if (ntohs(packet.header.length) > 0) {
-					infoPrint("Korrekte Antwort: %i", packet.content.questionresult.correct);
-					infoPrint("Spieler Antowrt: %i", packet.content.questionresult.timeout);
-					for (int i = 0; i < NUM_ANSWERS; i++) {
-						if (packet.content.questionresult.correct & (1 << i)) {
-							game_markAnswerCorrect(i);
-						} else {
-							game_markAnswerWrong(i);
-						}
-					}
-
-					if (packet.content.questionresult.timeout != 0) {
-						game_setStatusText("Zeit vorbei");
-						game_setStatusIcon(3);
-					} else if (selection != packet.content.questionresult.correct) {
-						game_setStatusText("Falsch");
-						game_setStatusIcon(2);
-					} else {
-						game_setStatusText("Richtige Antwort!");
-						game_setStatusIcon(1);
-					}
-					sem_post(&frage); //fragesemaphor aufrufen
-				}
-
-				break;
-			case RFC_GAMEOVER:
-				sprintf(msg, "Glückwunsch, Sie wurden %i.\n", packet.content.playerrank);
-				guiShowMessageDialog(msg, 1); //1=gui main geht nach Bestätigen zum Aufrufer zurück
-
-				pthread_exit(0);
-				return NULL;
-				break;
-			// RFC_ERRORWARNING
-			case RFC_ERRORWARNING:
-				receiveErrorMessage(packet);
-				break;
-			default:
-				break;
-			}
 	}
 	return 0;
 }

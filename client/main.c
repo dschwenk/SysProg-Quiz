@@ -14,6 +14,7 @@
 #include "common/rfc.h"
 #include "listener.h"
 #include "fragewechsel.h"
+#include "../common/rfc.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -73,7 +74,12 @@ int establishConnection(int socketD_, char* port_, char* hostname_) {
 
 void loginRequest(char* name) {
 	PACKET packet;
-	packet.header.type = RFC_LOGINREQUEST;
+
+	// LoginRequest
+	packet.header.type[0] = 'L';
+	packet.header.type[1] = 'R';
+	packet.header.type[2] = 'Q';
+
 	//packet.header.length = htons(sizeof(name));
 	packet.header.length = htons(strlen(name)+1);
 	strncpy(packet.content.loginrequest.playername, name, ntohs(packet.header.length));
@@ -84,7 +90,12 @@ void loginRequest(char* name) {
 
 void catalogRequest() {
     PACKET packet;
-    packet.header.type = RFC_CATALOGREQUEST;
+
+	// CatalogRequest
+	packet.header.type[0] = 'C';
+	packet.header.type[1] = 'R';
+	packet.header.type[2] = 'Q';
+
     packet.header.length = htons(0);
     // sende Nachricht
     sendPacket(packet, socketDeskriptor);
@@ -223,7 +234,12 @@ int main(int argc, char **argv){
 void preparation_onCatalogChanged(const char *newSelection) {
 	debugPrint("Katalogauswahl: %s", newSelection);
     PACKET packet;
-    packet.header.type = RFC_CATALOGCHANGE;
+
+	// CatalogChange
+	packet.header.type[0] = 'C';
+	packet.header.type[1] = 'C';
+	packet.header.type[2] = 'H';
+
     packet.header.length = htons(strlen(newSelection));
     strncpy(packet.content.catalogname, newSelection, strlen(newSelection));
     sendPacket(packet, socketDeskriptor);
@@ -234,7 +250,12 @@ void preparation_onCatalogChanged(const char *newSelection) {
 void preparation_onStartClicked(const char *currentSelection) {
     debugPrint("Starte Katalog %s\n", currentSelection);
     PACKET packet;
-    packet.header.type = RFC_STARTGAME;
+
+	// StartGame
+	packet.header.type[0] = 'S';
+	packet.header.type[1] = 'T';
+	packet.header.type[2] = 'G';
+
     packet.header.length = htons(strlen(currentSelection));
     //preparation_hideWindow();
     strncpy(packet.content.catalogname, currentSelection, strlen(currentSelection));
@@ -245,7 +266,12 @@ void preparation_onStartClicked(const char *currentSelection) {
 void preparation_onWindowClosed(void) {
 	debugPrint("Vorbereitungsfenster geschlossen");
     PACKET packet;
-    packet.header.type = RFC_ERRORWARNING;
+
+	// ErrorWarning
+	packet.header.type[0] = 'E';
+	packet.header.type[1] = 'R';
+	packet.header.type[2] = 'R';
+
     packet.header.length = htons(strlen("Der Spieler hat das Spiel verlassen!"));
     packet.content.error.errortype = ERR_CLIENTLEFTGAME;
     strncpy(packet.content.error.errormessage,"Der Spieler hat das Spiel verlassen!",ntohs(packet.header.length));
@@ -259,7 +285,12 @@ void game_onSubmitClicked(unsigned char selectedAnswers)
 	infoPrint("Absende-Button angeklickt, Bitmaske der Antworten: %u",	(unsigned)selectedAnswers);
 	selection = selectedAnswers;
 	PACKET packet;
-	packet.header.type = RFC_QUESTIONANSWERED;
+
+	// QuestionAnswered
+	packet.header.type[0] = 'Q';
+	packet.header.type[1] = 'A';
+	packet.header.type[2] = 'N';
+
 	packet.header.length = htons(sizeof(uint8_t));
 	packet.content.selection = (uint8_t) selection;
 	sendPacket(packet, socketDeskriptor);
@@ -269,7 +300,12 @@ void game_onSubmitClicked(unsigned char selectedAnswers)
 void game_onWindowClosed(void) {
 	debugPrint("Spielfenster geschlossen");
     PACKET packet;
-    packet.header.type = RFC_ERRORWARNING;
+
+	// ErrorWarning
+	packet.header.type[0] = 'E';
+	packet.header.type[1] = 'R';
+	packet.header.type[2] = 'R';
+
     packet.header.length = htons(strlen("Der Spieler hat das Spiel verlassen!"));
     packet.content.error.errortype = ERR_CLIENTLEFTGAME;
     strncpy(packet.content.error.errormessage,"Der Spieler hat das Spiel verlassen!",ntohs(packet.header.length));
