@@ -47,6 +47,7 @@ SERVER_MODULES=server/catalog.o \
 	       server/user.o \
 	       common/sockets.o \
 	       common/networking.o \
+	       common/rfc.o \
 	       common/util.o
 
 CLIENT_MODULES=client/fragewechsel.o \
@@ -54,6 +55,7 @@ CLIENT_MODULES=client/fragewechsel.o \
 	       client/main.o \
 	       common/sockets.o \
 	       common/networking.o \
+	       common/rfc.o \
 	       common/util.o
 
 LOADER_MODULES=loader/browse.o \
