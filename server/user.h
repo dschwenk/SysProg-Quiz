@@ -21,7 +21,7 @@ typedef struct player {
 	int sockDesc;
 	uint32_t score;
 	int GameOver;
-} PLAYER;
+} USER;
 
 
 void initSpielerverwaltung();
@@ -32,7 +32,7 @@ void sendPlayerList();
 int countUser();
 void sendCatalogChange();
 void setPlayerRanking();
-PLAYER getUser(int);
+USER getUser(int);
 int isGameOver();
 void sendGameOver(int);
 void setUserScore(int,int);

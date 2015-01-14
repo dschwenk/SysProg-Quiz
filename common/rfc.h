@@ -25,7 +25,7 @@
 // max. Laenge Spielername (inkl. '\0')
 #define PLAYER_NAME_LENGTH 32
 // max. Laenge Katalogname
-#define CATALOG_NAME_LENGTH 31
+#define MAX_CATALOG_NAME_LENGTH 31
 // define max. Messagelength (inkl. '\0')
 #define MAX_MESSAGE_LENGTH 100
 
@@ -36,8 +36,8 @@
 
 // LoginRequest
 typedef struct {
-	char playername[PLAYER_NAME_LENGTH];
 	uint8_t RFCVersion;
+	char name[31]; // nicht nullterminiert
 } LOGINREQUEST;
 
 // LoginResponseOK
@@ -55,14 +55,14 @@ typedef struct {
 
 // Errortype + Errormessage
 typedef struct {
-	 uint8_t errortype;
-	 char errormessage[MAX_MESSAGE_LENGTH];
+	 uint8_t subtype; // 0 Warning, 1 Fatal -> exit Client
+	 char message[MAX_MESSAGE_LENGTH]; // nicht nullterminiert
 } ERROR;
 
 // Antwortauswahl + richtige Antwort
 typedef struct {
-	uint8_t timeout;
- 	uint8_t correct;
+	uint8_t timeout; // wenn Timout fuer Frage erreicht wurde ungleich 0, sonst 0
+ 	uint8_t correct; // Bitmaske der richtigen Antwortmoeglichkeiten
 } QUESTIONRESULT;
 
 
@@ -70,7 +70,7 @@ typedef struct {
 typedef union {
 	LOGINREQUEST loginrequest;		// LRQ - LoginRequest
 	LOGINRESPONSEOK loginresponseok;	// LOK - LoginResponseok
-	char catalogname[CATALOG_NAME_LENGTH];	// CRQ, CCH, STG - CatalogRequest, CatalogChange, StartGame
+	char catalogname[MAX_CATALOG_NAME_LENGTH];	// CRQ, CCH, STG - CatalogRequest, CatalogChange, StartGame
 	PLAYERLIST playerlist[MAX_PLAYERS];	// LST - Playerlist
 	QuestionMessage question;		// QUE - Question
 	uint8_t selection;			// QAN - QuestionAnswered
@@ -104,11 +104,13 @@ int isStringEqual(HEADER, const char *s);
 
 
 // selbst definierte Warnung-/Fehlertypen + Konstanten ('ersetzen ERR_WARNUNG / FATAL)
-#define ERR_MAXCOUNTPLAYERREACHED 101
-#define ERR_PLAYERNAMEEXIST 102
-#define ERR_GAMEISRUNNING 103
-#define ERR_SPIELLEITERLEFTGAME 104
-#define ERR_TOOFEWPLAERS 105
-#define ERR_CLIENTLEFTGAME 107
+#define ERR_MAXCOUNTPLAYERREACHED 1
+#define ERR_PLAYERNAMEEXIST 1
+#define ERR_GAMEISRUNNING 1
+#define ERR_SPIELLEITERLEFTGAME 1
+#define ERR_TOOFEWPLAERS_GAME 1
+
+#define ERR_TOOFEWPLAERS_PREP 0
+#define ERR_CLIENTLEFTGAME 0
 
 #endif

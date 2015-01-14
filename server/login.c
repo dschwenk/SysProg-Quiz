@@ -38,10 +38,7 @@ bool game_running = false;
  */
 void* login_main(int sock){
 	PACKET packet;
-	packet.header.type[0] = '0';
-	packet.header.type[1] = '0';
-	packet.header.type[2] = '0';
-	packet.header.length = 0;
+
 	int client_socket;
 	int client_id;
 
@@ -80,27 +77,31 @@ void* login_main(int sock){
 				if(!game_running){
 					// fuege Spieler zur Verwaltung hinzu, uebergebe Name + Socketdeskriptor
 					lock_user_mutex();
-					client_id = addPlayer(packet.content.loginrequest.playername,ntohs(packet.header.length), client_socket);
+					client_id = addPlayer(packet.content.loginrequest.name,(ntohs(packet.header.length))-1, client_socket);
 					unlock_user_mutex();
 					// Name bereits vorhanden
 					if(client_id == -1){
+						char *errormsg = "Name bereits vorhanden!";
 						errorPrint("Name bereits vorhanden");
 						response.header.type[0] = 'E';
 						response.header.type[1] = 'R';
 						response.header.type[2] = 'R';
-						response.header.length = htons(sizeof(ERROR));
-						response.content.error.errortype = ERR_PLAYERNAMEEXIST;
-						strncpy(response.content.error.errormessage, "Name bereits vorhanden", MAX_MESSAGE_LENGTH);
+						size_t length = strlen(errormsg);
+						response.header.length = htons(length+1);
+						response.content.error.subtype = ERR_PLAYERNAMEEXIST;
+						strncpy(response.content.error.message, errormsg , length);
 					}
 					// Zu viele Spieler angemeldet
 					else if(client_id >= MAX_PLAYERS){
+						char *errormsg = "Maximale Anzahl an Spielern erreicht!";
 						errorPrint("Maximale Anzahl an Spielern erreicht!");
 						response.header.type[0] = 'E';
 						response.header.type[1] = 'R';
 						response.header.type[2] = 'R';
-						response.header.length = htons(sizeof(ERROR));
-						response.content.error.errortype = ERR_MAXCOUNTPLAYERREACHED;
-						strncpy(response.content.error.errormessage, "Maximale Anzahl an Spielern erreicht!", MAX_MESSAGE_LENGTH);
+						size_t length = strlen(errormsg);
+						response.header.length = htons(length+1);
+						response.content.error.subtype = ERR_MAXCOUNTPLAYERREACHED;
+						strncpy(response.content.error.message, errormsg , length);
 					}
 					// LRQ - Anmeldung am Server erfolgreich
 					else {
@@ -115,8 +116,6 @@ void* login_main(int sock){
 
                     // sofern Anmeldung ok - erstelle Clientthread fuer neu hinzugefuegten Spieler
 					if(!(isStringEqual(packet.header, "ERR"))){
-                    //if(response.header.type != RFC_ERRORWARNING){
-                        // uebergebe Client-ID an Client-Thread
                         infoPrint("Erstelle Client-Thread");
                         pthread_create(&client_threads[client_id], NULL, (void *) &client_thread_main, &client_id);
                     }
@@ -129,13 +128,15 @@ void* login_main(int sock){
 				}
 				// Spiel laeft bereits - keine Anmeldung moeglich
 				else {
-					errorPrint("Spiel laeft bereits, Client kann nicht angemeldet werden");
+					char *errormsg = "Spiel laeft bereits, Client kann nicht angemeldet werden!";
+					errorPrint("Spiel laeft bereits, Client kann nicht angemeldet werden!");
 					response.header.type[0] = 'E';
 					response.header.type[1] = 'R';
 					response.header.type[2] = 'R';
-					response.header.length = htons(sizeof(ERROR));
-					response.content.error.errortype = ERR_GAMEISRUNNING;
-					strncpy(response.content.error.errormessage, "Spiel laeft bereits, Client kann nicht angemeldet werden", MAX_MESSAGE_LENGTH);
+					size_t length = strlen(errormsg);
+					response.header.length = htons(length+1);
+					response.content.error.subtype = ERR_GAMEISRUNNING;
+					strncpy(response.content.error.message, errormsg , length);
 					// sende Antwort
 					sendPacket(response, client_socket);
 				}

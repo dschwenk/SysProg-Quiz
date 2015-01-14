@@ -3,7 +3,7 @@
  * Multiplayer-Quiz
  *
  * Server
- * 
+ *
  * user.c: Implementierung der User-Verwaltung
  */
 
@@ -23,7 +23,7 @@
 
 
 // Array fuer die Spielerverwaltung
-PLAYER spieler[MAX_PLAYERS];
+USER spieler[MAX_PLAYERS];
 
 // Mutex fuer die Spielerverwaltung
 pthread_mutex_t user_mutex;
@@ -57,7 +57,7 @@ void initSpielerverwaltung(){
  */
 int addPlayer(char *name, int length, int sock){
 	debugPrint("Fuege Spieler zur Verwaltung hinzu.");
-	name[length] = 0;
+	name[length] = '\0';
 	int current_count_user = countUser();
 	// sind noch freie Spielerplaetze vorhanden
 	if(current_count_user >= MAX_PLAYERS){
@@ -66,14 +66,14 @@ int addPlayer(char *name, int length, int sock){
 	else {
 		// pruefe auf gleichen Namen
 		for(int i = 0; i < current_count_user; i++){
-			if(strncmp(spieler[i].name, name, length + 1) == 0){
+			if(strncmp(spieler[i].name, name, length+1) == 0){
 				return -1;
 			}
 		}
 		// fuege Spieler zur Verwaltung hinzu
 		int new_id = current_count_user;
 		spieler[new_id].id = new_id;
-		strncpy(spieler[new_id].name, name, length + 1);
+		strncpy(spieler[new_id].name, name, length);
 		spieler[new_id].sockDesc = sock;
 		// gebe Spieler-ID zurueck
 		return new_id;
@@ -103,7 +103,7 @@ int removePlayer(int client_id){
 	spieler[i].GameOver = 0;
 	// gehe Spielerliste durch und setze geloeschten / default Spieler an letzte Stelle von Array
 	while(i < current_user_count){
-		PLAYER temp = spieler[i];
+		USER temp = spieler[i];
 		spieler[i] = spieler[i+1];
 		spieler[i+1] = temp;
 		i++;
@@ -209,7 +209,7 @@ void setPlayerRanking(){
 		for(int n=0;n<(current_user_count - 1);n++){
 			// vergleiche Spielstaende - ist Spielstand des nachfolgender groesser - tausche Plaetze
 			if(spieler[n].score < spieler[n+1].score){
-				PLAYER temp = spieler[n];
+				USER temp = spieler[n];
 				spieler[n] = spieler[n+1];
 				spieler[n+1] = temp;
 			}
@@ -222,7 +222,7 @@ void setPlayerRanking(){
  * gebe Spieler zurueck
  * param int client_id ID des Spielers
  */
-PLAYER getUser(int client_id){
+USER getUser(int client_id){
 	// suche Spieler im Spielerverwaltungsarray
 	for(int i = 0; i < MAX_PLAYERS; i++){
 		if(spieler[i].id == client_id){

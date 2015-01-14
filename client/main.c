@@ -80,11 +80,8 @@ void loginRequest(char* name) {
 	packet.header.type[1] = 'R';
 	packet.header.type[2] = 'Q';
 
-	//packet.header.length = htons(sizeof(LOGINREQUEST));
-	//packet.header.length = htons(sizeof(name));
-	packet.header.length = htons(strlen(name)+1);
-	//packet.header.length = htons(strlen(name));
-	strncpy(packet.content.loginrequest.playername, name, ntohs(packet.header.length));
+	packet.header.length = htons((strlen(name))+1); // length = Laenge des Namens + 1 (Length <= 32)
+	strncpy(packet.content.loginrequest.name, name, strlen(name));
 	packet.content.loginrequest.RFCVersion = RFC_VERSION;
 	// sende Nachricht
 	sendPacket(packet, socketDeskriptor);
@@ -149,7 +146,14 @@ void process_client_commands(int argc, char** argv) {
 					infoPrint("Name darf nur max. 31 Zeichen lang sein");
 					exit(1);
 				}
-				userNameIsSet = true;
+				else {
+					for(int i=0;i<32;i++){
+						if(name[i] == '\n'){
+							name[i] = '\0'; // Name nullterminieren
+						}
+					}
+					userNameIsSet = true;
+				}
 				break;
 			// Verbose
 			case 'v':
@@ -273,10 +277,11 @@ void preparation_onWindowClosed(void) {
 	packet.header.type[0] = 'E';
 	packet.header.type[1] = 'R';
 	packet.header.type[2] = 'R';
-
-    packet.header.length = htons(strlen("Der Spieler hat das Spiel verlassen!"));
-    packet.content.error.errortype = ERR_CLIENTLEFTGAME;
-    strncpy(packet.content.error.errormessage,"Der Spieler hat das Spiel verlassen!",ntohs(packet.header.length));
+	char *errormsg = "Der Spieler hat das Spiel verlassen!";
+	size_t length = strlen(errormsg);
+	packet.header.length = htons(length+1);
+    packet.content.error.subtype = ERR_CLIENTLEFTGAME;
+    strncpy(packet.content.error.message, errormsg, length);
     sendPacket(packet, socketDeskriptor);
     guiQuit();
 }
@@ -308,10 +313,11 @@ void game_onWindowClosed(void) {
 	packet.header.type[0] = 'E';
 	packet.header.type[1] = 'R';
 	packet.header.type[2] = 'R';
-
-    packet.header.length = htons(strlen("Der Spieler hat das Spiel verlassen!"));
-    packet.content.error.errortype = ERR_CLIENTLEFTGAME;
-    strncpy(packet.content.error.errormessage,"Der Spieler hat das Spiel verlassen!",ntohs(packet.header.length));
+	char *errormsg = "Der Spieler hat das Spiel verlassen!";
+	size_t length = strlen(errormsg);
+	packet.header.length = htons(length+1);
+    packet.content.error.subtype = ERR_CLIENTLEFTGAME;
+    strncpy(packet.content.error.message, errormsg, length);
     sendPacket(packet, socketDeskriptor);
     guiQuit();
 }

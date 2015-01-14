@@ -62,13 +62,14 @@ PACKET recvPacket (int socketDeskriptor){
 		errorPrint("Fehlerhafter Header empfangen. Anzahl empfangener Bytes: %d ", recv_bytes);
 		// gebe Fehlerpaket zurueck
 		// setzte Header + Errortype + Fehlernachricht
-		char error_message[] = "Fehlerhafte uebertragung der Daten, Verbindung unterbrochen!";
+		char *error_message = "Fehlerhafte uebertragung der Daten, Verbindung unterbrochen!";
 		packet.header.type[0] = 'E';
 		packet.header.type[1] = 'R';
 		packet.header.type[2] = 'R';
-		packet.content.error.errortype = ERR_FATAL;
-		strcpy(packet.content.error.errormessage, error_message);
-		packet.header.length = htons(3 + strlen(error_message) + 1);
+		size_t length = strlen(error_message);
+		packet.header.length = htons(length+1);
+		packet.content.error.subtype = ERR_FATAL;
+		strncpy(packet.content.error.message, error_message, length);
 		return packet;
 	}
 	// debugPrint("Nachicht vom Type %c%c%c empfangen", packet.header.type[0], packet.header.type[1], packet.header.type[2]);
@@ -79,13 +80,14 @@ PACKET recvPacket (int socketDeskriptor){
 			errorPrint("Fehlerhaftes Datenpaket empfangen. Anzahl empfangener Bytes: %d ", recv_bytes);
 			// gebe Fehlerpaket  zurueck
 			// setzte Header + Errortype + Fehlernachricht
-			char error_message[] = "Fehlerhaftes Datenpacket";
+			char *error_message = "Fehlerhaftes Datenpacket!";
 			packet.header.type[0] = 'E';
 			packet.header.type[1] = 'R';
 			packet.header.type[2] = 'R';
-			packet.content.error.errortype = ERR_FATAL;
-			strcpy(packet.content.error.errormessage, error_message);
-			packet.header.length = htons(3 + strlen(error_message) + 1);
+			size_t length = strlen(error_message);
+			packet.header.length = htons(length+1);
+			packet.content.error.subtype = ERR_FATAL;
+			strncpy(packet.content.error.message, error_message, length);
 			return packet;
 		}
 	}

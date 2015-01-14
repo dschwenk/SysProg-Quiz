@@ -3,7 +3,7 @@
  * Multiplayer-Quiz
  *
  * Server
- * 
+ *
  * clientthread.c: Implementierung des Client-Threads
  */
 
@@ -37,7 +37,7 @@ void *client_thread_main(int* client_id){
 	bool time_error = false; // Flag ob ein Fehler bei der Restzeitberechnung auftrat
 
 	// hole Spielerinformationen
-	PLAYER spieler;
+	USER spieler;
 	lock_user_mutex();
 	spieler = getUser(*client_id);
 	unlock_user_mutex();
@@ -64,7 +64,7 @@ void *client_thread_main(int* client_id){
 		else {
 			packet = recvPacket(spieler.sockDesc);
 		}
-        infoPrint("clientthread packet: %d", packet.header.type);
+        infoPrint("clientthread received packet: %c%c%c", packet.header.type[0], packet.header.type[1], packet.header.type[2]);
 
 		// werte empfangenes Paket aus
 
@@ -72,19 +72,22 @@ void *client_thread_main(int* client_id){
 		if(isStringEqual(packet.header, "ERR")){
 			// pruefe Subtyp
 			// Spieler hat das Spiel verlassen
-			if(packet.content.error.errortype == ERR_CLIENTLEFTGAME){
+			if(packet.content.error.subtype == ERR_CLIENTLEFTGAME){
 				debugPrint("Spieler %s (ID: %d) hat das Spiel verlassen", spieler.name, spieler.id);
 				// pruefe ob Spielleiter
 				if(is_spielleiter){
 					debugPrint("Spieler %s (ID: %d) war Spielleiter", spieler.name, spieler.id);
 					infoPrint("Der Spieleiter hat das Spiel verlassen, der Server wird beendet");
+
 					// setzte Fehlertyp + Text
-					packet.header.type[0] = 'E';
-					packet.header.type[1] = 'R';
-					packet.header.type[2] = 'R';
-					response.header.length = htons(strlen("Der Spieleiter hat das Spiel verlassen, der Server wird beendet!"));
-					response.content.error.errortype = ERR_SPIELLEITERLEFTGAME;
-					strncpy(response.content.error.errormessage,"Der Spieleiter hat das Spiel verlassen, der Server wird beendet!",	ntohs(response.header.length));
+					response.header.type[0] = 'E';
+					response.header.type[1] = 'R';
+					response.header.type[2] = 'R';
+					char *errormsg = "Der Spieleiter hat das Spiel verlassen, der Server wird beendet!";
+					size_t length = strlen(errormsg);
+					response.header.length = htons(length+1);
+					response.content.error.subtype = ERR_SPIELLEITERLEFTGAME;
+					strncpy(response.content.error.message, errormsg , length);
 					// sende Fehlermeldung an alle
 					lock_user_mutex();
 					sendToAll(response);
@@ -102,12 +105,15 @@ void *client_thread_main(int* client_id){
 					// pruefe ob Spiel bereits laeft und Anzahl verbliebener Spieler
 					if((getGameRunning()) && (countUser() <= 2)){
 						// zu wenig Spieler
-						packet.header.type[0] = 'E';
-						packet.header.type[1] = 'R';
-						packet.header.type[2] = 'R';
-						response.header.length = htons(strlen("Zu wenig Spieler, breche Spiel ab."));
-						response.content.error.errortype = ERR_TOOFEWPLAERS;
-						strncpy(response.content.error.errormessage,"Zu wenig Spieler, breche Spiel ab.",ntohs(response.header.length));
+						infoPrint("Zu wenige Spieler, der Server wird beendet");
+						response.header.type[0] = 'E';
+						response.header.type[1] = 'R';
+						response.header.type[2] = 'R';
+						char *errormsg = "Zu wenig Spieler, breche Spiel ab.";
+						size_t length = strlen(errormsg);
+						response.header.length = htons(length+1);
+						response.content.error.subtype = ERR_TOOFEWPLAERS_GAME;
+						strncpy(response.content.error.message, errormsg , length);
 						// sende Fehlermeldung an alle
 						lock_user_mutex();
 						sendToAll(response);
@@ -163,18 +169,20 @@ void *client_thread_main(int* client_id){
 			// zu wenig Spieler - Spiel wird nicht gestartet
 			if(countUser() < 2){
 				infoPrint("Zu wenige Spieler um das Spiel zu starten!");
-				packet.header.type[0] = 'E';
-				packet.header.type[1] = 'R';
-				packet.header.type[2] = 'R';
-				response.header.length = htons(strlen("Zu wenige Spieler um das Spiel zu starten!"));
-				response.content.error.errortype = ERR_TOOFEWPLAERS;
-				strncpy(response.content.error.errormessage,"Zu wenige Spieler um das Spiel zu starten!", ntohs(response.header.length));
+				response.header.type[0] = 'E';
+				response.header.type[1] = 'R';
+				response.header.type[2] = 'R';
+				char *errormsg = "Zu wenige Spieler um das Spiel zu starten!";
+				size_t length = strlen(errormsg);
+				response.header.length = htons(length+1);
+				response.content.error.subtype = ERR_TOOFEWPLAERS_PREP;
+				strncpy(response.content.error.message, errormsg , length);
 				sendPacket(response, spieler.sockDesc);
 			}
 			// genug Spieler - Spiel wird gestartet
 			else {
 				setGameRunning();
-				char catalog[CATALOG_NAME_LENGTH];
+				char catalog[MAX_CATALOG_NAME_LENGTH];
 
 				// lade Fragen des aktiven Katalogs
 				strncpy(catalog, packet.content.catalogname,ntohs(packet.header.length));

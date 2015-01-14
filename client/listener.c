@@ -115,22 +115,20 @@ void receiveCatalogChange(PACKET packet){
 /*
  * Funktion wertet Fehlernachrichten aus
  */
-void receiveErrorMessage (PACKET packet){
+void receiveErrorMessage(PACKET packet){
 	char error_message[MAX_MESSAGE_LENGTH];
 	// hole Errornachricht
-	strncpy (error_message, packet.content.error.errormessage, ntohs (packet.header.length)-1);
+	strncpy (error_message, packet.content.error.message, ntohs(packet.header.length)-1);
 	// Nullterminierung
-	error_message[ntohs (packet.header.length)-1]= '\0';
+	error_message[ntohs(packet.header.length)-1] = '\0';
 	// zeige Errordialog + gebe Fehler auf Konsole aus
-	errorPrint("Fehler: %s\n", packet.content.error.errormessage);
+	errorPrint("Fehler: %s", packet.content.error.message);
 	// beende Client falls fataler Error
-	if(packet.content.error.errortype == ERR_SPIELLEITERLEFTGAME){
-		guiShowErrorDialog(error_message, 0);
-		exit(0);
+	if(packet.content.error.subtype == 1){
+		guiShowErrorDialog(error_message, 1);
 	}
-	else if((packet.content.error.errortype == ERR_TOOFEWPLAERS) && game_is_running){
+	else if(packet.content.error.subtype == 0){
 		guiShowMessageDialog(error_message, 0);
-		exit(0);
 	}
 }
 
@@ -166,20 +164,13 @@ void *listener_main(int * sockD){
     }
 	// ErrorWarning
     else if(isStringEqual(response.header, "ERR")){
-        char message[(ntohs(response.header.length))];
-        strncpy(message, response.content.error.errormessage,ntohs(response.header.length) - 1);
-        // Nullterminierung
-        message[ntohs(response.header.length) - 1] = '\0';
-        // zeige in GUI Fehlermeldung an
-        infoPrint("Fehler: %s\n", message);
-        guiShowErrorDialog(message, response.content.error.errortype);
-        exit(0);
+    	receiveErrorMessage(response);
     }
 	// Verbindung verloren
     else {
         // zeige in GUI Fehlermeldung an
         infoPrint("Verbindung zum Server verloren!");
-        guiShowErrorDialog("Verbindung zum Server verloren!", response.content.error.errortype);
+        guiShowErrorDialog("Verbindung zum Server verloren!", response.content.error.subtype);
         exit(0);
     }
 
