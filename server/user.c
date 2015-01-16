@@ -73,7 +73,7 @@ int addPlayer(char *name, int length, int sock){
 		// fuege Spieler zur Verwaltung hinzu
 		int new_id = current_count_user;
 		spieler[new_id].id = new_id;
-		strncpy(spieler[new_id].name, name, length);
+		strncpy(spieler[new_id].name, name, length+1);
 		spieler[new_id].sockDesc = sock;
 		// gebe Spieler-ID zurueck
 		return new_id;

@@ -191,8 +191,6 @@ int main(int argc, char **argv){
 
 	setProgName(argv[0]);
 
-	// debugEnable();
-
 	// Parameter auswerten
 	process_client_commands(argc, argv);
 
@@ -263,7 +261,6 @@ void preparation_onStartClicked(const char *currentSelection) {
 	packet.header.type[2] = 'G';
 
     packet.header.length = htons(strlen(currentSelection));
-    //preparation_hideWindow();
     strncpy(packet.content.catalogname, currentSelection, strlen(currentSelection));
     sendPacket(packet, socketDeskriptor);
 }
@@ -271,18 +268,18 @@ void preparation_onStartClicked(const char *currentSelection) {
 
 void preparation_onWindowClosed(void) {
 	debugPrint("Vorbereitungsfenster geschlossen");
-    PACKET packet;
+    PACKET errpacket;
 
 	// ErrorWarning
-	packet.header.type[0] = 'E';
-	packet.header.type[1] = 'R';
-	packet.header.type[2] = 'R';
+    errpacket.header.type[0] = 'E';
+    errpacket.header.type[1] = 'R';
+    errpacket.header.type[2] = 'R';
+    errpacket.content.error.subtype = ERR_CLIENTLEFTGAME;
 	char *errormsg = "Der Spieler hat das Spiel verlassen!";
 	size_t length = strlen(errormsg);
-	packet.header.length = htons(length+1);
-    packet.content.error.subtype = ERR_CLIENTLEFTGAME;
-    strncpy(packet.content.error.message, errormsg, length);
-    sendPacket(packet, socketDeskriptor);
+	errpacket.header.length = htons(length+1);
+    strncpy(errpacket.content.error.message, errormsg, length);
+    sendPacket(errpacket, socketDeskriptor);
     guiQuit();
 }
 
@@ -297,15 +294,14 @@ void game_onSubmitClicked(unsigned char selectedAnswers)
 	packet.header.type[0] = 'Q';
 	packet.header.type[1] = 'A';
 	packet.header.type[2] = 'N';
-
 	packet.header.length = htons(1);
-	//packet.header.length = htons(sizeof(uint8_t));
-	packet.content.selection = (uint8_t) selection;
+	packet.content.selection = (uint8_t)selectedAnswers;
 	sendPacket(packet, socketDeskriptor);
 }
 
 
 void game_onWindowClosed(void) {
+
 	debugPrint("Spielfenster geschlossen");
     PACKET packet;
 

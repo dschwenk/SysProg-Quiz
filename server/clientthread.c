@@ -26,6 +26,17 @@
 #include <stdio.h>
 
 
+
+
+PACKET errpacket;
+
+void setErrorPaket(PACKET paket){
+	errpacket = paket;
+}
+
+
+
+
 void *client_thread_main(int* client_id){
 
 	// Variablen fuer Spielablauf
@@ -33,7 +44,7 @@ void *client_thread_main(int* client_id){
 	int question_number = 0; // Fragenummer
 	int correct; // Bitmaske für richtige Antworten
 	int time_left = 0; // Zeit fuer Beantwortung der Frage
-	uint8_t selection = 5; // vom Spieler gewaehlte Antowrt
+	uint8_t selection = 0; // vom Spieler gewaehlte Antowrt
 	bool time_error = false; // Flag ob ein Fehler bei der Restzeitberechnung auftrat
 
 	// hole Spielerinformationen
@@ -53,17 +64,17 @@ void *client_thread_main(int* client_id){
 
 	// Empfangsschleife
 	while(1){
-		// Fehlerbehandlung falls bei letzter Frage ein Zeitfehler auftrat
+
+		// Fehlerbehandlung falls bei letzter Frage ein Fehler empfangen wurde
 		if(time_error){
-			packet.header.type[0] = 'E';
-			packet.header.type[1] = 'R';
-			packet.header.type[2] = 'R';
 			time_error = false;
+			packet = errpacket;
 		}
 		// empfange
 		else {
 			packet = recvPacket(spieler.sockDesc);
 		}
+
         infoPrint("clientthread received packet: %c%c%c", packet.header.type[0], packet.header.type[1], packet.header.type[2]);
 
 		// werte empfangenes Paket aus
@@ -71,6 +82,7 @@ void *client_thread_main(int* client_id){
 		// ERR - Fehlernachricht empfangen
 		if(isStringEqual(packet.header, "ERR")){
 			// pruefe Subtyp
+
 			// Spieler hat das Spiel verlassen
 			if(packet.content.error.subtype == ERR_CLIENTLEFTGAME){
 				debugPrint("Spieler %s (ID: %d) hat das Spiel verlassen", spieler.name, spieler.id);
@@ -103,7 +115,7 @@ void *client_thread_main(int* client_id){
 					removePlayer(spieler.id);
 					unlock_user_mutex();
 					// pruefe ob Spiel bereits laeft und Anzahl verbliebener Spieler
-					if((getGameRunning()) && (countUser() <= 2)){
+					if((getGameRunning()) && (countUser() < 2)){
 						// zu wenig Spieler
 						infoPrint("Zu wenige Spieler, der Server wird beendet");
 						response.header.type[0] = 'E';
@@ -127,6 +139,7 @@ void *client_thread_main(int* client_id){
 				}
 			}
 			else {
+				printf("clientthread else\n");
 				lock_user_mutex();
 				removePlayer(spieler.id);
 				unlock_user_mutex();
@@ -211,9 +224,9 @@ void *client_thread_main(int* client_id){
 				question_packet.header.type[1] = 'U';
 				question_packet.header.type[2] = 'E';
 				question_packet.header.length = htons(sizeof(QuestionMessage));
-				QuestionMessage quest_message;
 
 				// kopiere Frage + Antworten + Timeout
+				QuestionMessage quest_message;
 				strcpy(quest_message.question, shmQ->question);
 				strcpy(quest_message.answers[0], shmQ->answers[0]);
 				strcpy(quest_message.answers[1], shmQ->answers[1]);
@@ -233,15 +246,15 @@ void *client_thread_main(int* client_id){
 
 				// werte Restzeit aus - Zeit abgelaufen
 				if(time_left == -1){
-					PACKET QuestionAnswer;
+					PACKET questionresult;
 					// QuestionResult - Auswertung einer Antwort auf eine Quiz-Frage
-					QuestionAnswer.header.type[0] = 'Q';
-					QuestionAnswer.header.type[1] = 'R';
-					QuestionAnswer.header.type[2] = 'E';
-					QuestionAnswer.header.length = htons(2);
-					QuestionAnswer.content.questionresult.correct = correct;
-					QuestionAnswer.content.questionresult.timeout = 1;
-					sendPacket(QuestionAnswer, spieler.sockDesc);
+					questionresult.header.type[0] = 'Q';
+					questionresult.header.type[1] = 'R';
+					questionresult.header.type[2] = 'E';
+					questionresult.header.length = htons(2);
+					questionresult.content.questionresult.correct = correct;
+					questionresult.content.questionresult.timeout = 1;
+					sendPacket(questionresult, spieler.sockDesc);
 					infoPrint("Antwort auf Frage gesendet!");
 					// The sem_post() function unlocks the semaphore referenced by sem by performing a semaphore unlock operation on that semaphore.
 					sem_post(&semaphor_score);
@@ -264,18 +277,18 @@ void *client_thread_main(int* client_id){
 						// The sem_post() function unlocks the semaphore referenced by sem by performing a semaphore unlock operation on that semaphore.
 						sem_post(&semaphor_score);
 					}
-					PACKET QuestionAnswer;
+					PACKET questionresult;
 					// QuestionResult - Auswertung einer Antwort auf eine Quiz-Frage
-					QuestionAnswer.header.type[0] = 'Q';
-					QuestionAnswer.header.type[1] = 'R';
-					QuestionAnswer.header.type[2] = 'E';
-					QuestionAnswer.header.length = htons(2);
-					QuestionAnswer.content.questionresult.correct = correct;
-					QuestionAnswer.content.questionresult.timeout = 0;
-					sendPacket(QuestionAnswer, spieler.sockDesc);
-					infoPrint("Antwort gesendet!");
+					questionresult.header.type[0] = 'Q';
+					questionresult.header.type[1] = 'R';
+					questionresult.header.type[2] = 'E';
+					questionresult.header.length = htons(2);
+					questionresult.content.questionresult.correct = correct;
+					questionresult.content.questionresult.timeout = 0;
+					sendPacket(questionresult, spieler.sockDesc);
+					infoPrint("Antwort auf Frage gesendet!");
 				}
-				// Fehler
+				// es trat waehrend der Beantwortung ein Fehler auf
 				else {
 					time_error = true;
 				}
@@ -299,6 +312,10 @@ void *client_thread_main(int* client_id){
 	pthread_exit(0);
 	return NULL;
 }
+
+
+
+
 
 
 /*
@@ -327,12 +344,13 @@ int questionTimer(uint8_t* selection, int timeout, int sockD){
 	timeRest.tv_nsec = 0;
 	timeRest.tv_sec = timeout;
 
-	// solange keine Antwort eingetroffen ist laeuft die Zeit ab
+
 	while(waiting_for_answer){
 
 		FD_ZERO(&fds);
 		FD_SET(sockD, &fds);
 
+		// solange keine Antwort eingetroffen ist laeuft die Zeit ab
 		select = pselect(sockD + 1, &fds, NULL, NULL, &timeRest, NULL);
 
 		if(select > 0){
@@ -342,7 +360,9 @@ int questionTimer(uint8_t* selection, int timeout, int sockD){
 			if(isStringEqual(packet.header, "QAN")) {
 				memcpy(selection, &packet.content.selection, 1);
 			}
+			// es wurde ein Fehler / anderes Paket empfangen
 			else {
+				errpacket = packet;
 				return 0;
 			}
 			waiting_for_answer = false;

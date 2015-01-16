@@ -21,6 +21,15 @@
 #define ERR_WARNING 0
 #define ERR_FATAL 1
 
+// selbst definierte Warnung-/Fehlertypen + Konstanten ('ersetzen ERR_WARNUNG / FATAL)
+#define ERR_MAXCOUNTPLAYERREACHED 1
+#define ERR_PLAYERNAMEEXIST 1
+#define ERR_GAMEISRUNNING 1
+#define ERR_SPIELLEITERLEFTGAME 1
+#define ERR_TOOFEWPLAERS_GAME 1
+
+#define ERR_TOOFEWPLAERS_PREP 0
+#define ERR_CLIENTLEFTGAME 0
 
 // max. Laenge Spielername (inkl. '\0')
 #define PLAYER_NAME_LENGTH 32
@@ -101,16 +110,5 @@ typedef struct{
 // gibt bei Uebereinstimmung 1 zurueck falls nicht 0
 int isStringEqual(HEADER, const char *s);
 
-
-
-// selbst definierte Warnung-/Fehlertypen + Konstanten ('ersetzen ERR_WARNUNG / FATAL)
-#define ERR_MAXCOUNTPLAYERREACHED 1
-#define ERR_PLAYERNAMEEXIST 1
-#define ERR_GAMEISRUNNING 1
-#define ERR_SPIELLEITERLEFTGAME 1
-#define ERR_TOOFEWPLAERS_GAME 1
-
-#define ERR_TOOFEWPLAERS_PREP 0
-#define ERR_CLIENTLEFTGAME 0
 
 #endif

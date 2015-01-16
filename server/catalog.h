@@ -17,7 +17,7 @@
 
 // enthaelt Namen der verfuegbaren Fragenkataloge
 typedef struct CatalogArray {
-	char CatalogName[31];
+	char CatalogName[MAX_CATALOG_NAME_LENGTH];
 } CATALOGARRAY;
 
 

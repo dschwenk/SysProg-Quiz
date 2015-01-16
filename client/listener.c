@@ -28,7 +28,7 @@
 
 int clientID;
 bool game_is_running = false;
-char msg[50];
+char msg[MAX_MESSAGE_LENGTH];
 
 
 /*
@@ -47,7 +47,7 @@ void receivePlayerlist(PACKET packet){
 	preparation_clearPlayers();
 
 	for (int i = 1; i <= MAX_PLAYERS; i++) {
-		game_setPlayerName(i, "");
+		game_setPlayerName(i, " ");
 		game_setPlayerScore(i, 0);
 	}
 
@@ -116,6 +116,7 @@ void receiveCatalogChange(PACKET packet){
  * Funktion wertet Fehlernachrichten aus
  */
 void receiveErrorMessage(PACKET packet){
+
 	char error_message[MAX_MESSAGE_LENGTH];
 	// hole Errornachricht
 	strncpy (error_message, packet.content.error.message, ntohs(packet.header.length)-1);
@@ -126,6 +127,7 @@ void receiveErrorMessage(PACKET packet){
 	// beende Client falls fataler Error
 	if(packet.content.error.subtype == 1){
 		guiShowErrorDialog(error_message, 1);
+		exit(0);
 	}
 	else if(packet.content.error.subtype == 0){
 		guiShowMessageDialog(error_message, 0);

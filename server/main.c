@@ -216,20 +216,23 @@ void endServer(){
 	debugPrint("Beende Server.");
 
 	// Nachricht an alle Clients senden - sofern welche angemeldet
+	/*
 	debugPrint("Sende Nachricht an Clients: Server wird beendet.");
 	if(countUser() > 0){
 		PACKET close_server_packet;
 		close_server_packet.header.type[0] = 'E';
 		close_server_packet.header.type[1] = 'R';
 		close_server_packet.header.type[2] = 'R';
-		close_server_packet.header.length = htons(sizeof(ERROR));
+		char *errormsg = "Der Spieler hat das Spiel verlassen!";
+		size_t length = strlen(errormsg);
+		close_server_packet.header.length = htons(5 + length+1);
 		close_server_packet.content.error.subtype = ERR_FATAL;
-		strncpy(close_server_packet.content.error.message, "Server beendet", 100);
+		strncpy(close_server_packet.content.error.message, errormsg, length);
 		// sende Nachricht
 		sendToAll(close_server_packet);
 		debugPrint("Nachricht ueber Serverende an alle Clients verschickt.");
 	}
-
+	 */
 	// Socket schliessen
 	if(close(server_socket) == 0){
 		debugPrint("Serversocket geschlossen.");
