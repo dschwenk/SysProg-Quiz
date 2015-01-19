@@ -46,6 +46,7 @@ void receivePlayerlist(PACKET packet){
 	// Playerlist leeren
 	preparation_clearPlayers();
 
+	// clear Spielerliste
 	for (int i = 1; i <= MAX_PLAYERS; i++) {
 		game_setPlayerName(i, NULL);
 		game_setPlayerScore(i, 0);
@@ -56,6 +57,7 @@ void receivePlayerlist(PACKET packet){
 		pthread_exit(0);
 	}
 
+	// befülle Spielerliste
 	for(int i=0;i< spielerzahl;i++){
 		// kopiere Spieler ID in Spielerliste
 		userlist[i].id=packet.content.playerlist[i].id;
