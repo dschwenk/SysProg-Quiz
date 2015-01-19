@@ -108,10 +108,6 @@ int removePlayer(int client_id){
 		spieler[i+1] = temp;
 		i++;
 	}
-	// aktualisiere Spielstand / Rangfolge
-	setPlayerRanking();
-	// sende PlayerList an alle Spieler
-	sendPlayerList();
 	return 0;
 }
 

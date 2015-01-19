@@ -185,7 +185,7 @@ void setSingleInstance(int file){
     // truncate - kuerzen
     // ftruncate, truncate - truncate a file to a specified length
     if (ftruncate(file, 0) < 0) {
-    	infoPrint("Server läuft bereits..");
+    	infoPrint("Server läuft bereits ...");
     	exit(1);
     }
 
@@ -216,23 +216,22 @@ void endServer(){
 	debugPrint("Beende Server.");
 
 	// Nachricht an alle Clients senden - sofern welche angemeldet
-	/*
 	debugPrint("Sende Nachricht an Clients: Server wird beendet.");
 	if(countUser() > 0){
 		PACKET close_server_packet;
 		close_server_packet.header.type[0] = 'E';
 		close_server_packet.header.type[1] = 'R';
 		close_server_packet.header.type[2] = 'R';
-		char *errormsg = "Der Spieler hat das Spiel verlassen!";
+		char *errormsg = "Der Server wurde beendet!";
 		size_t length = strlen(errormsg);
-		close_server_packet.header.length = htons(5 + length+1);
+		close_server_packet.header.length = htons(length+1);
 		close_server_packet.content.error.subtype = ERR_FATAL;
 		strncpy(close_server_packet.content.error.message, errormsg, length);
 		// sende Nachricht
 		sendToAll(close_server_packet);
 		debugPrint("Nachricht ueber Serverende an alle Clients verschickt.");
 	}
-	 */
+
 	// Socket schliessen
 	if(close(server_socket) == 0){
 		debugPrint("Serversocket geschlossen.");
@@ -304,10 +303,10 @@ void INThandler(int sig) {
  */
 int main(int argc, char ** argv) {
 
+	setProgName(argv[0]);
+
 	// Der Server soll auf dem lokalen System nur einmal gestartet werden koennen.
 	setSingleInstance(SingleInstanceFile);
-
-	setProgName(argv[0]);
 
 	// verarbeite Parameter
 	process_commands(argc, argv);

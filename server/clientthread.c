@@ -84,7 +84,7 @@ void *client_thread_main(int* client_id){
 			// pruefe Subtyp
 
 			// Spieler hat das Spiel verlassen
-			if(packet.content.error.subtype == ERR_CLIENTLEFTGAME){
+			if(packet.content.error.subtype == ERR_WARNING){
 				debugPrint("Spieler %s (ID: %d) hat das Spiel verlassen", spieler.name, spieler.id);
 				// pruefe ob Spielleiter
 				if(is_spielleiter){
@@ -114,6 +114,8 @@ void *client_thread_main(int* client_id){
 					lock_user_mutex();
 					removePlayer(spieler.id);
 					unlock_user_mutex();
+					// sende aktualisierte Spielerliste an alle verbliebene Spieler
+					sem_post(&semaphor_score);
 					// pruefe ob Spiel bereits laeft und Anzahl verbliebener Spieler
 					if((getGameRunning()) && (countUser() < 2)){
 						// zu wenig Spieler
@@ -133,19 +135,16 @@ void *client_thread_main(int* client_id){
 						// Server beenden
 						endServer();
 					}
-					// sende aktualisierte Spielerliste an alle verbliebene Spieler
-					// sendPlayerList();
-					sem_post(&semaphor_score);
 				}
 			}
+			// ERR_FATAL
 			else {
-				printf("clientthread else\n");
+				debugPrint("Fataler Fehler - entferne Spieler!");
 				lock_user_mutex();
 				removePlayer(spieler.id);
 				unlock_user_mutex();
-				if(getGameRunning()){
-					sendGameOver(0);
-				}
+				// sende aktualisierte Spielerliste an alle verbliebene Spieler
+				sem_post(&semaphor_score);
 			}
 			// beende Thread
 			pthread_exit(0);
@@ -288,7 +287,7 @@ void *client_thread_main(int* client_id){
 					sendPacket(questionresult, spieler.sockDesc);
 					infoPrint("Antwort auf Frage gesendet!");
 				}
-				// es trat waehrend der Beantwortung ein Fehler auf
+				// Restzeit = 0
 				else {
 					time_error = true;
 				}
@@ -315,15 +314,13 @@ void *client_thread_main(int* client_id){
 
 
 
-
-
-
 /*
  * Funktion wartet auf die Antwort zu einer Frage und
  * gibt die Restzeit zurueck
  */
 int questionTimer(uint8_t* selection, int timeout, int sockD){
 
+	// Filedeskriptor-Menge
 	fd_set fds;
 
 	PACKET packet;
@@ -333,7 +330,7 @@ int questionTimer(uint8_t* selection, int timeout, int sockD){
 
 	bool waiting_for_answer = true;
 
-	// aktuelle Systemzeit holen
+	// aktuelle Systemzeit holen - "Startzeit"
 	// CLOCK_MONOTONIC: Eine Uhr, die nicht verstellt werden kann und die Zeit seit einem nicht näher spezifizierten Zeitpunkt (Booten des Systems?) anzeigt.
 	clock_gettime(CLOCK_MONOTONIC, &timeStart);
 
@@ -341,16 +338,19 @@ int questionTimer(uint8_t* selection, int timeout, int sockD){
 	timeEnd.tv_nsec = timeStart.tv_nsec;
 	timeEnd.tv_sec = timeStart.tv_sec + timeout;
 
+	// setze Timeout - solange wartet pselect
 	timeRest.tv_nsec = 0;
 	timeRest.tv_sec = timeout;
 
 
 	while(waiting_for_answer){
 
+		// Neuinitalisierung von fds, kann durch vorheriges pselect veraendert worden sein
 		FD_ZERO(&fds);
+		// Filedeskriptor in Set einfuegen
 		FD_SET(sockD, &fds);
 
-		// solange keine Antwort eingetroffen ist laeuft die Zeit ab
+		// warte bis Filedeskriptoren bereit ist zum lesen (eine Anwort empfangen werden kann) oder die Zeit abgelaufen ist
 		select = pselect(sockD + 1, &fds, NULL, NULL, &timeRest, NULL);
 
 		if(select > 0){
@@ -368,7 +368,7 @@ int questionTimer(uint8_t* selection, int timeout, int sockD){
 			waiting_for_answer = false;
 		}
 
-		// aktuelle Systemzeit holen
+		// aktuelle Systemzeit holen -> "Endzeit"
 		clock_gettime(CLOCK_MONOTONIC, &timeStart);
 
 		// vergleiche Start & Endzeit - pruefe ob Zeit abgelaufen
@@ -382,7 +382,14 @@ int questionTimer(uint8_t* selection, int timeout, int sockD){
 		}
 	}
 
+	// Restzeit steht in timeRest
 	uint32_t timeleft = 0;
+	/*
+	 * http://stackoverflow.com/questions/15287778/clock-gettime-returning-a-nonsense-value
+	 * Note that the delta is in seconds, which is calculated by dividing the nanoseconds by 1000000, which
+	 * combined with subtracting a time from the future from a time from the past which
+	 * equals a negative, and then dividing that by 1000, it makes the delta a positive.
+	 */
 	timeleft = timeRest.tv_nsec / 1000000;
 	timeleft = timeleft + (timeRest.tv_sec * 1000);
 

@@ -13,6 +13,9 @@
 #include "user.h"
 
 
+/*
+ * Thread verwaltet den Spielstand
+ */
 void* score_main(){
 	while(1){
 		/*

@@ -476,30 +476,39 @@ struct timespec timespecSub(
         return result;
 }
 
+
 /*
  * Funktion um zwei timespec Strukturen miteinander zu vergleichen
  */
 int cmpTimespec(const struct timespec *a, const struct timespec *b) {
-        int time_a = 0;
-        int time_b = 0;
 
-        time_a = a->tv_nsec / 1000000;
-        time_a = time_a + (a->tv_sec * 1000);
+	int time_a = 0;
+	int time_b = 0;
 
-        time_b = b->tv_nsec / 1000000;
-        time_b = time_b + (b->tv_sec * 1000);
+	/*
+	 * http://stackoverflow.com/questions/15287778/clock-gettime-returning-a-nonsense-value
+	 * Note that the delta is in seconds, which is calculated by dividing the nanoseconds by 1000000, which
+	 * combined with subtracting a time from the future from a time from the past which
+	 * equals a negative, and then dividing that by 1000, it makes the delta a positive.
+	 */
+	time_a = a->tv_nsec / 1000000;
+	time_a = time_a + (a->tv_sec * 1000);
 
-        if (time_a == time_b) {
-                return 0;
-        }
+	time_b = b->tv_nsec / 1000000;
+	time_b = time_b + (b->tv_sec * 1000);
 
-        if (time_a < time_b) {
-                return -1;
-        }
+	// keine Restzeit - "Restzeit = 0"
+	if (time_a == time_b) {
+			return 0;
+	}
+	// Zeit abgelaufen
+	if (time_a < time_b) {
+			return -1;
+	}
+	// Restzeit vorhanden
+	if (time_a > time_b) {
+			return 1;
+	}
 
-        if (time_a > time_b) {
-                return 1;
-        }
-
-        return -2;
+	return -2;
 }

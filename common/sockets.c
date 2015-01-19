@@ -23,7 +23,7 @@
  */
 int openServerSocket(unsigned short port) {
 
-	// Erstellt Socket auf IPv4
+	// Erstellt Socket - IPv4 + TCP
 	int login_socket = socket(AF_INET, SOCK_STREAM, 0);
 
 	// Fehler beim Socketerstellen abfangen

@@ -47,7 +47,7 @@ void receivePlayerlist(PACKET packet){
 	preparation_clearPlayers();
 
 	for (int i = 1; i <= MAX_PLAYERS; i++) {
-		game_setPlayerName(i, " ");
+		game_setPlayerName(i, NULL);
 		game_setPlayerScore(i, 0);
 	}
 
@@ -127,7 +127,7 @@ void receiveErrorMessage(PACKET packet){
 	// beende Client falls fataler Error
 	if(packet.content.error.subtype == 1){
 		guiShowErrorDialog(error_message, 1);
-		exit(0);
+		pthread_exit(0);
 	}
 	else if(packet.content.error.subtype == 0){
 		guiShowMessageDialog(error_message, 0);
@@ -216,21 +216,25 @@ void *listener_main(int * sockD){
 			infoPrint("Frage erhalten");
 
 			if (packet.header.length != 0) {
+				// entferne alle gesetzten Antwortmarkierungen
 				game_clearAnswerMarksAndHighlights();
+				// Fragetext setzen
 				game_setQuestion(packet.content.question.question);
+				// Antworten setzen
 				for (int i = 0; i <= 3; i++) {
 					game_setAnswer(i, packet.content.question.answers[i]);
 				}
+				// aktiviere Antwortcheckboxen + Sendebutton
 				game_setControlsEnabled(1);
 				sprintf(msg, "Sie haben %i Sekunden Zeit\n",
 						packet.content.question.timeout);
-				game_setStatusIcon(0);
+				game_setStatusIcon(STATUS_ICON_NONE );
 				// game_setStatusText(msg);
 			// leere Frage -> Spielende
 			} else if (ntohs(packet.header.length) == 0) {
 				sprintf(msg, "Alle Fragen beantwortet, bitte Warten.\n");
 				game_setStatusText(msg);
-				game_setStatusIcon(0);
+				game_setStatusIcon(STATUS_ICON_NONE );
 			}
 
 			game_setStatusText(msg);
@@ -239,6 +243,7 @@ void *listener_main(int * sockD){
 		else if (isStringEqual(packet.header, "QRE")) {
 			infoPrint("Frageauswertung erhalten!");
 
+			// Antwortcheckboxen + Sendebutton deaktivieren
 			game_setControlsEnabled(0);
 
 			if (ntohs(packet.header.length) > 0) {
@@ -255,13 +260,13 @@ void *listener_main(int * sockD){
 
 				if (packet.content.questionresult.timeout != 0) {
 					game_setStatusText("Zeit vorbei");
-					game_setStatusIcon(3);
+					game_setStatusIcon(STATUS_ICON_TIMEOUT );
 				} else if (selection != packet.content.questionresult.correct) {
 					game_setStatusText("Falsch");
-					game_setStatusIcon(2);
+					game_setStatusIcon(STATUS_ICON_WRONG);
 				} else {
 					game_setStatusText("Richtige Antwort!");
-					game_setStatusIcon(1);
+					game_setStatusIcon(STATUS_ICON_CORRECT);
 				}
 				sem_post(&frage); //fragesemaphor aufrufen
 			}

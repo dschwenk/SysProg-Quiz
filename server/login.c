@@ -10,6 +10,7 @@
 #include "login.h"
 #include "clientthread.h"
 #include "user.h"
+#include "score.h"
 #include "common/rfc.h"
 #include "common/sockets.h"
 #include "common/networking.h"
@@ -32,7 +33,7 @@ bool game_running = false;
 
 
 /*
- * Login_Thread Start
+ * Thread ist fuer die Anmeldung eines Spieler zustaendig
  *
  * param Serversocket
  */
@@ -51,9 +52,9 @@ void* login_main(int sock){
 		pthread_exit(NULL);
 	}
 
-	// Empfaenger-Schleife
+	// Empfangs-Schleife
 	while(1){
-		// Warte auf Connection-Request
+		// ankommende Verbindung annehmen
 		if(listen(sock,64) == 0){
 			// Bei erfolgreichem Request wird Connection aufgebaut
 			client_socket = accept(sock, 0, 0);
@@ -124,12 +125,13 @@ void* login_main(int sock){
 					sendPacket(response, client_socket);
 
 					// aktuelle Spielerliste an alle Spieler senden
-					sendPlayerList();
+					//sendPlayerList();
+					sem_post(&semaphor_score);
 				}
 				// Spiel laeft bereits - keine Anmeldung moeglich
 				else {
-					char *errormsg = "Spiel laeft bereits, Client kann nicht angemeldet werden!";
-					errorPrint("Spiel laeft bereits, Client kann nicht angemeldet werden!");
+					char *errormsg = "Spiel laeuft bereits, Client kann nicht angemeldet werden!";
+					errorPrint("Spiel laeuft bereits, Client kann nicht angemeldet werden!");
 					response.header.type[0] = 'E';
 					response.header.type[1] = 'R';
 					response.header.type[2] = 'R';

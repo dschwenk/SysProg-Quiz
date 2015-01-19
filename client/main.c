@@ -36,7 +36,6 @@
 int socketDeskriptor;
 int clientID;
 
-
 char *name = "unknown";
 // Standardserver
 char *server = "localhost";
@@ -45,6 +44,10 @@ char *port = "8111";
 // Ausgewählte Antwort
 int selection = 0;
 
+
+/*
+ * Funktion stellt eine Verbindung zum Server her
+ */
 int establishConnection(int socketD_, char* port_, char* hostname_) {
 	int portno;
 	struct sockaddr_in serv_addr;
@@ -62,7 +65,7 @@ int establishConnection(int socketD_, char* port_, char* hostname_) {
 		serv_addr.sin_family = AF_INET;
 		bcopy(server->h_addr, &serv_addr.sin_addr,server->h_length);
 		serv_addr.sin_port = htons(portno);
-
+		// Socket verbinden
 		if(connect(socketD_, (struct sockaddr*) &serv_addr, sizeof(serv_addr))	< 0){
 			infoPrint("Error: no such host");
 			failure = 1;
@@ -72,6 +75,10 @@ int establishConnection(int socketD_, char* port_, char* hostname_) {
 }
 
 
+/*
+ * Funktion sendet eine Loginrequest an den Server.
+ * Der Loginrequest enthaelt den Spielernamen
+ */
 void loginRequest(char* name) {
 	PACKET packet;
 
@@ -87,6 +94,10 @@ void loginRequest(char* name) {
 	sendPacket(packet, socketDeskriptor);
 }
 
+
+/*
+ * Funktion sendet eine CatalogRequest an den Server
+ */
 void catalogRequest() {
     PACKET packet;
 
@@ -101,7 +112,9 @@ void catalogRequest() {
 }
 
 
-// gebe Hilfe aus
+/*
+ * Funktion gibt die Hilfe (Parameter) aus
+ */
 void show_Clienthelp() {
     printf("Available options:\n");
     printf("    -h --help       show this help message\n");
@@ -112,7 +125,10 @@ void show_Clienthelp() {
 }
 
 
-// werte Kommandozeilenparameter aus
+
+/*
+ * Funktion wertet die Parameter aus
+ */
 void process_client_commands(int argc, char** argv) {
 
     debugPrint("Parsing command line options...");
@@ -194,8 +210,13 @@ int main(int argc, char **argv){
 	// Parameter auswerten
 	process_client_commands(argc, argv);
 
-	//Socket anlegen
+	//Socket anlegen (IPv4 + TCP)
 	socketDeskriptor = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	// Fehler beim Socketerstellen abfangen
+	if (socketDeskriptor == -1) {
+		errorPrint("Socket konnte nicht erstellt werden: ");
+		return -1;
+	}
 
 	// stelle Verbindung zum Server her
 	if(establishConnection(socketDeskriptor, port, server) == 0){
@@ -219,11 +240,12 @@ int main(int argc, char **argv){
 		pthread_t Fragewechsel_thread;
 		pthread_create(&Fragewechsel_thread, NULL, (void *) &fragewechsel_main,	&socketDeskriptor);
 
-		//GUI Anzeigen
+		// Zeigt das Vorbereitungsfenster auf dem Bildschirm an.
 		preparation_showWindow();
+		// Ereignisschleife der GUI
 		guiMain();
 
-		// schliesse Gui
+		// schliesse GUI
 		guiDestroy();
 	}
 

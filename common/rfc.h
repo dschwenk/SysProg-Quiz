@@ -21,7 +21,7 @@
 #define ERR_WARNING 0
 #define ERR_FATAL 1
 
-// selbst definierte Warnung-/Fehlertypen + Konstanten ('ersetzen ERR_WARNUNG / FATAL)
+// selbst definierte Warnung-/Fehlertypen + Konstanten ('ersetzen' ERR_WARNUNG / FATAL)
 #define ERR_MAXCOUNTPLAYERREACHED 1
 #define ERR_PLAYERNAMEEXIST 1
 #define ERR_GAMEISRUNNING 1
